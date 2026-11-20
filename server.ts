@@ -2,8 +2,8 @@ import { createServer } from 'node:http'
 import { randomBytes, randomInt, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { DatabaseSync } from 'node:sqlite'
-import { baseCatalog, catalog, seasonCatalog, type Card } from './catalog.ts'
-import { animeCatalog, animeTiers, legacyAnimeCatalog, type AnimeCard } from './anime-catalog.ts'
+import { baseCatalog, catalog, registeredCatalog, seasonCatalog, type Card } from './catalog.ts'
+import { animeCatalog, animeTiers, expandedAnimeCatalog, legacyAnimeCatalog, type AnimeCard } from './anime-catalog.ts'
 import { modes, type Mode } from './draft-modes.ts'
 
 type DraftCard = Card | AnimeCard
@@ -15,7 +15,7 @@ type Room = {
   offers: number[]
   mode?: Mode
   seasonCards?: boolean
-  catalogVersion?: 2
+  catalogVersion?: 2 | 3
 }
 const db = new DatabaseSync(process.env.DRAFT_DATABASE ?? 'draft.sqlite')
 db.exec('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL)')
@@ -25,12 +25,14 @@ const makePlayer = (name: string, mode: Mode, token = randomUUID()): Player =>
   ({ name, token, picks: modes[mode].attributes.map(() => null) })
 const turn = (room: Room) => room.players.flatMap(player => player.picks).filter(pick => pick !== null).length
 
-function deal(cards: readonly DraftCard[], rounds: number) {
+function deal(mode: Mode) {
+  const cards = mode === 'anime' ? expandedAnimeCatalog : catalog
+  const tiers = mode === 'anime' ? [0, 0, 0, 0, 1, 1, 1, 2, 2, 3] : [0, 0, 1, 1, 1, 2, 2, 3]
   const offers: number[] = []
   const drawn = new Set<number>()
   const athletesBySeat = [new Set<number>(), new Set<number>()]
-  for (let round = 0; round < rounds; round++) {
-    const tier = [0, 0, 1, 1, 1, 2, 2, 3][randomInt(8)]
+  for (let round = 0; round < modes[mode].attributes.length; round++) {
+    const tier = tiers[randomInt(tiers.length)]
     for (const usedAthletes of athletesBySeat) {
       const available = cards.filter(card =>
         card.tier === tier && !drawn.has(card.id) && !usedAthletes.has(card.athleteId))
@@ -44,8 +46,12 @@ function deal(cards: readonly DraftCard[], rounds: number) {
 }
 
 function cardsFor(room: Room): readonly DraftCard[] {
-  if (room.mode === 'anime') return room.catalogVersion === 2 ? animeCatalog : legacyAnimeCatalog
-  if (room.catalogVersion === 2) return catalog
+  if (room.mode === 'anime') {
+    if (room.catalogVersion === 3) return expandedAnimeCatalog
+    return room.catalogVersion === 2 ? animeCatalog : legacyAnimeCatalog
+  }
+  if (room.catalogVersion === 3) return catalog
+  if (room.catalogVersion === 2) return registeredCatalog
   return room.seasonCards ? seasonCatalog : baseCatalog
 }
 
@@ -88,8 +94,7 @@ function handle(action: string, body: Record<string, unknown>) {
     const bot = body.bot === true
     const players = [makePlayer(name, mode)]
     if (bot) players.push(makePlayer('Bot', mode))
-    const room: Room = { code, bot, mode, players, offers: [], catalogVersion: 2 }
-    room.offers = deal(cardsFor(room), modes[mode].attributes.length)
+    const room: Room = { code, bot, mode, players, offers: deal(mode), catalogVersion: 3 }
     save.run(code, JSON.stringify(room))
     return { token: players[0].token, room: view(room, 0) }
   }
@@ -126,8 +131,8 @@ function handle(action: string, body: Record<string, unknown>) {
   } else if (action === 'rematch') {
     if (turn(room) !== room.offers.length) throw new Error('A partida ainda está em andamento.')
     room.players = room.players.map(({ name, token }) => makePlayer(name, mode, token))
-    room.catalogVersion = 2
-    room.offers = deal(cardsFor(room), modes[mode].attributes.length)
+    room.catalogVersion = 3
+    room.offers = deal(mode)
     if (!room.bot) room.players.reverse()
     seat = room.players.findIndex(player => player.token === body.token)
     save.run(code, JSON.stringify(room))

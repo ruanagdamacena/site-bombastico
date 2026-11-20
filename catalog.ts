@@ -196,4 +196,49 @@ const registeredPlayers = leagueSquads.flatMap((clubs, tier) =>
     .map((player, index) => makeCard({ ...baseCatalog[tier * 50 + index], ...player, fictional: false })),
 )
 
-export const catalog = [...registeredPlayers, ...seasonCatalog.slice(registeredPlayers.length)]
+export const registeredCatalog = [...registeredPlayers, ...seasonCatalog.slice(registeredPlayers.length)]
+
+const familiarSquads = [
+  ['Corinthians', '2012', 'Cássio|Alessandro|Chicão|Fábio Santos|Ralf|Danilo (meia)|Jorge Henrique|Emerson Sheik|Romarinho|Paolo Guerrero'],
+  ['Santos', '2011', 'Ganso|Elano|Arouca|Danilo (lateral)|Léo|Edu Dracena|Durval|Borges|Zé Eduardo|Alan Patrick'],
+  ['São Paulo', '2005', 'Rogério Ceni|Diego Lugano|Fabão|Edcarlos|Júnior|Cicinho|Mineiro|Josué|Amoroso|Aloísio Chulapa'],
+  ['Palmeiras', '2020', 'Weverton|Marcos Rocha|Luan Garcia|Matías Viña|Gabriel Menino|Danilo Oliveira|Zé Rafael|Patrick de Paula|Rony|Breno Lopes'],
+  ['Flamengo', '2019', 'Diego Alves|Rafinha|Rodrigo Caio|Pablo Marí|Willian Arão|Gerson|Vitinho|Rodinei|Renê|Reinier'],
+  ['Manchester United', '2007/08', 'Nani|Anderson|Owen Hargreaves|Park Ji-sung|Darren Fletcher|Wes Brown|John O’Shea|Mikaël Silvestre|Michael Carrick|Patrice Evra'],
+  ['Real Madrid', '2016/17', 'Nacho Fernández|Lucas Vázquez|Mateo Kovačić|Fábio Coentrão|Marco Asensio|Isco|Álvaro Morata|James Rodríguez|Dani Carvajal|Raphaël Varane'],
+  ['Barcelona', '2014/15', 'Pedro Rodríguez|Jordi Alba|Gerard Piqué|Javier Mascherano|Ivan Rakitić|Marc-André ter Stegen|Sergi Roberto|Jérémy Mathieu|Rafinha Alcântara|Adriano Correia'],
+  ['Liverpool', '2018/19', 'Xherdan Shaqiri|Adam Lallana|Dejan Lovren|Joël Matip|Joe Gomez|James Milner|Divock Origi|Jordan Henderson|Georginio Wijnaldum|Andrew Robertson'],
+  ['Chelsea', '2011/12', 'Daniel Sturridge|Florent Malouda|Salomon Kalou|John Obi Mikel|José Bosingwa|Ryan Bertrand|Raul Meireles|Oriol Romeu|Branislav Ivanović|Michael Essien'],
+]
+
+// Use the players' main strengths to shape these provisional game ratings.
+// Digits match the attribute order; G marks goalkeepers.
+const squadSpecialties = [
+  'G444415300', // Corinthians
+  '1143444001', // Santos
+  'G444335401', // São Paulo
+  'G441141030', // Palmeiras
+  'G444413311', // Flamengo
+  '2143514453', // Manchester United
+  '4333210144', // Real Madrid
+  '03441G1443', // Barcelona
+  '2144410153', // Liverpool
+  '0324331415', // Chelsea
+]
+const familiarPlayers = familiarSquads.flatMap(([club, season, names], squad) =>
+  names.split('|').map((name, index) => ({ club, season, name, specialty: squadSpecialties[squad][index] })),
+)
+
+// Alternate the lower two bands inside each squad so the club does not predict the score.
+const higherRatedInSquad = [0, 2, 4, 7, 9]
+export const catalog = [
+  ...familiarPlayers.map(({ specialty, ...player }, id) => {
+    const index = id % 10
+    const target = higherRatedInSquad.includes(index) ? 74 + id % 6 : 65 + id % 5
+    const offsets = specialty === 'G' ? [-12, 4, -9, -3, 14, 6] : [10, 4, -6, 3, -7, -4]
+    const strength = specialty === 'G' ? 0 : Number(specialty)
+    const ratings = attributes.map((_, attribute) => target + offsets[(attribute - strength + offsets.length) % offsets.length])
+    return makeCard({ ...player, id, athleteId: id, ratings, fictional: false })
+  }),
+  ...seasonCatalog.slice(familiarPlayers.length),
+]

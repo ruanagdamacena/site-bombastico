@@ -90,6 +90,17 @@ function App() {
   const ready = room?.players.length === 2
   const finished = room?.step === 2 * attributes.length
   const myTurn = ready && !finished && room.step % 2 === room.seat
+  const drawKey = ready && room.offer && !finished ? room.code + ':' + room.step : ''
+  const [revealedDraw, setRevealedDraw] = useState('')
+  const rolling = Boolean(drawKey && drawKey !== revealedDraw)
+  useEffect(() => {
+    if (!drawKey) {
+      setRevealedDraw('')
+      return
+    }
+    const timer = window.setTimeout(() => setRevealedDraw(drawKey), 540)
+    return () => window.clearTimeout(timer)
+  }, [drawKey])
   const scores = finished ? room.players.map(player =>
     player.picks.reduce<number>((total, value) => total + (value ?? 0), 0) / attributes.length) : []
 
@@ -129,14 +140,20 @@ function App() {
           <button disabled={busy} onClick={() => act('rematch')}>Jogar revanche</button>
         </> : <>
           <p>Rodada {Math.floor(room.step / 2) + 1} de {attributes.length} · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
-          <h2>{room.offer?.name}</h2>
-          {room.offer && <>
-            <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
-            {'clue' in room.offer && <>
-              <p className="card-clue">{room.offer.clue}</p>
-              <span className="tier">{room.offer.tier}</span>
-            </>}
-          </>}
+          <div className="draw-window" key={drawKey}>
+            {rolling ? <div className="draw-spinner">
+              <span className="draw-track" aria-hidden="true" />
+              <span className="draw-indicator" aria-hidden="true" />
+              <span className="draw-status">Sorteando…</span>
+            </div> : room.offer && <div className="draw-result">
+              <h2>{room.offer.name}</h2>
+              <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
+              {'clue' in room.offer && <>
+                <p className="card-clue">{room.offer.clue}</p>
+                <span className="tier">{room.offer.tier}</span>
+              </>}
+            </div>}
+          </div>
         </>}
       </section>
       <div className="boards">{room.players.map((player, seat) => <section className="panel" key={seat}>
@@ -145,7 +162,7 @@ function App() {
         <div className="attributes">{attributes.map((attribute, index) => {
           const source = player.sources?.[index]
           return <button key={attribute} className="quiet"
-            disabled={busy || !myTurn || seat !== room.seat || player.picks[index] !== null}
+            disabled={busy || rolling || !myTurn || seat !== room.seat || player.picks[index] !== null}
             onClick={() => act('pick', { attribute: index, step: room.step })}>
             <span>{attribute}{source && <small>{[source.name, ...cardContext(source)].join(' · ')}</small>}</span>
             <strong>{player.picks[index] ?? '—'}</strong>

@@ -156,3 +156,55 @@ export const animeCatalog = profiles.flatMap(([universe, characters], storyIndex
 )
 
 export type AnimeCard = (typeof animeCatalog)[number]
+
+const additionalProfiles: typeof profiles = [
+  ['Demon Slayer', [
+    ['Aoi Kanzaki', 'Mansão Borboleta', 'Ajuda no tratamento e no treino de recuperação', [29, 61, 43, 41, 66, 49]],
+    ['Murata', 'Monte Natagumo', 'Conhece a Respiração da Água e luta em equipe', [45, 58, 50, 48, 56, 50]],
+    ['Genya Shinazugawa', 'Seleção Final', 'Se apoia mais na agressividade do que na técnica de espada', [54, 42, 50, 53, 46, 56]],
+    ['Tanjiro Kamado', 'Monte Natagumo', 'Usa o olfato para rastrear o inimigo em meio aos fios', [72, 77, 71, 64, 75, 71]],
+    ['Inosuke Hashibira', 'Monte Natagumo', 'Localiza ameaças com sua percepção espacial', [71, 71, 80, 62, 56, 74]],
+    ['Zenitsu Agatsuma', 'Distrito do Entretenimento', 'Acelera de uma vez para atacar em linha reta', [79, 83, 95, 65, 66, 72]],
+    ['Kyojuro Rengoku', 'Trem Infinito', 'Defende os passageiros enquanto luta contra os demônios', [88, 91, 86, 86, 79, 88]],
+    ['Akaza', 'Trem Infinito', 'Sente o espírito de luta e se regenera após receber golpes', [93, 95, 91, 93, 85, 98]],
+  ]],
+  ['Jujutsu Kaisen', [
+    ['Junpei Yoshino', 'Arco do Mahito', 'Usa uma água-viva amaldiçoada que injeta veneno', [47, 62, 38, 46, 57, 46]],
+    ['Kasumi Miwa', 'Intercâmbio de Kyoto', 'Usa Domínio Simples junto à técnica de sacar a espada', [48, 68, 56, 60, 59, 47]],
+    ['Mai Zenin', 'Intercâmbio de Kyoto', 'A pontaria compensa a pouca energia para criar munição', [52, 73, 52, 45, 65, 35]],
+    ['Yuji Itadori', 'Intercâmbio de Kyoto', 'A força física e o Black Flash fazem a diferença no corpo a corpo', [82, 72, 80, 70, 63, 73]],
+    ['Nobara Kugisaki', 'Pinturas da Morte', 'Usa Ressonância para atingir o adversário indiretamente', [70, 85, 62, 58, 80, 67]],
+    ['Aoi Todo', 'Incidente de Shibuya', 'Troca posições para desorganizar o adversário', [82, 91, 78, 78, 94, 80]],
+    ['Megumi Fushiguro', 'Pinturas da Morte', 'Combina suas invocações e abre um domínio incompleto', [82, 89, 77, 72, 90, 82]],
+    ['Satoru Gojo', 'Incidente de Shibuya', 'Mantém distância com o Ilimitado e calcula o uso do domínio', [98, 98, 96, 99, 94, 98]],
+  ]],
+  ['My Hero Academia', [
+    ['Izuku Midoriya', 'Antes do One For All', 'Analisa heróis e suas habilidades em cadernos', [22, 38, 37, 34, 90, 41]],
+    ['Minoru Mineta', 'Festival Esportivo', 'Usa esferas adesivas para atrasar o oponente', [39, 70, 50, 41, 69, 48]],
+    ['Denki Kaminari', 'Festival Esportivo', 'A descarga elétrica é forte, mas o excesso o deixa vulnerável', [68, 49, 52, 45, 44, 56]],
+    ['Ochaco Uraraka', 'Festival Esportivo', 'Usa a gravidade para preparar uma chuva de destroços', [60, 78, 61, 58, 83, 63]],
+    ['Tenya Iida', 'Festival Esportivo', 'Os motores nas pernas dão uma arrancada rápida', [67, 72, 89, 63, 68, 71]],
+    ['Shoto Todoroki', 'Festival Esportivo', 'Consegue bloquear uma área inteira com gelo', [90, 88, 75, 91, 74, 85]],
+    ['Katsuki Bakugo', 'Festival Esportivo', 'Usa explosões também para mudar de direção no ar', [87, 89, 90, 70, 82, 83]],
+    ['All Might', 'Batalha de Kamino', 'Ainda entrega golpes decisivos mesmo com pouco tempo de transformação', [99, 93, 94, 92, 88, 70]],
+  ]],
+  ['Hunter × Hunter', [
+    ['Leorio', 'Exame Hunter', 'Resiste às provas sem domínio de Nen', [48, 41, 50, 55, 67, 46]],
+    ['Tonpa', 'Exame Hunter', 'Tenta eliminar novatos com truques, evitando confronto direto', [29, 36, 35, 38, 70, 38]],
+    ['Komugi', 'Formigas Quimera', 'Antecipa jogadas no Gungi mesmo sem habilidades de luta', [15, 48, 22, 24, 99, 47]],
+    ['Gon Freecss', 'Torre Celestial', 'Começa a aplicar Nen à sua força e aos seus reflexos', [71, 66, 76, 67, 65, 74]],
+    ['Killua Zoldyck', 'Exame Hunter', 'O treino de assassino já dá velocidade e precisão', [65, 83, 88, 60, 74, 55]],
+    ['Kurapika', 'Yorknew', 'Prepara correntes específicas para enfrentar a Trupe', [82, 93, 81, 80, 92, 86]],
+    ['Hisoka', 'Torre Celestial', 'Usa o Bungee Gum para criar ângulos inesperados', [85, 94, 87, 78, 92, 84]],
+    ['Meruem', 'Formigas Quimera', 'Aprende durante o combate e resiste a ataques sucessivos', [98, 93, 95, 98, 98, 97]],
+  ]],
+]
+
+const additionalTiers = [0, 0, 0, 1, 1, 2, 2, 3]
+const addedCards = additionalProfiles.flatMap(([universe, characters], series) =>
+  characters.map(([name, arc, clue, ratings], index) => {
+    const id = animeCatalog.length + series * characters.length + index
+    return { id, athleteId: id, name, universe, arc, clue, ratings, tier: additionalTiers[index] }
+  }),
+)
+export const expandedAnimeCatalog = [...animeCatalog, ...addedCards]
