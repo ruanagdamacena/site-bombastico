@@ -229,3 +229,29 @@ form label { flex: 1 1 140px; }
 .match-scorecard ul { list-style: none; margin: 10px 0 0; padding: 0; }
 .match-scorecard p { margin: 8px 0 0; }
 .match-scorecard time { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.history-board { grid-template-columns: minmax(0, 1.45fr) minmax(270px, 1fr); align-items: start; }
+.history-board .pitch-field { min-height: 420px; padding: 16px 8px; align-content: space-around; }
+.pitch-player:disabled { opacity: 1; cursor: default; }
+.pitch-player[data-active="true"] { background: #d9fa62; color: #18210e; }
+.pitch-player[data-active="true"] small { color: inherit; }
+.drawn-squad {
+  display: grid;
+  gap: 3px;
+  padding: 13px 16px;
+  background: linear-gradient(118deg, #1b352b, #16201b 68%);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  animation: result-arrival .35s ease-out both;
+}
+.drawn-squad small { color: var(--accent); font-weight: 750; }
+.squad-choices { display: grid; gap: 5px; max-height: 320px; overflow-y: auto; padding: 2px; }
+.squad-choices button { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.squad-choices small { text-align: right; }
+.squad-choices [data-selected="true"] { border-color: var(--accent); background: #334825; }
+@media (max-width: 720px) {
+  .history-board { grid-template-columns: 1fr; }
+  .history-board .pitch-field { min-height: 350px; }
+  .squad-choices { max-height: 250px; }
+}
+@media (prefers-reduced-motion: reduce) { .drawn-squad { animation: none; } }

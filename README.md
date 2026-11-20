@@ -36,9 +36,11 @@ Cada partida concluída rende 20 moedas e 100 XP, com mais 10 moedas e 50 XP por
 
 ## Draft histórico
 
-O Draft histórico já permite montar um XI em 4-3-3 ou 4-4-2 e disputar um quadrangular solo. As campanhas de Libertadores 2019 e Copa de 2002 ficam salvas por conta. Escolha entre três jogadores por vaga, use um novo sorteio se quiser e escolha a tática antes de cada rodada. A tabela usa pontos, saldo e gols marcados. Em empate nesses três critérios, os times ficam em ordem alfabética.
+O Draft histórico permite montar um XI em 4-3-3 ou 4-4-2 e disputar um quadrangular solo. Sorteie um elenco e um ano, escolha um atleta e clique numa vaga compatível no gramado. Você pode reposicionar jogadores na mesma linha antes de simular e trocar um elenco uma vez por campanha. As campanhas de Libertadores 2019 e Seleções históricas ficam salvas por conta. Na segunda, o draft mistura Copas de 1962, 1974, 2002 e 2022 e os adversários vêm de 2002. Escolha a tática antes de cada rodada. A tabela usa pontos, saldo e gols marcados. Em empate nesses três critérios, os times ficam em ordem alfabética.
 
 Os elencos foram adaptados à formação do jogo com notas provisórias. As referências de escalação são a [ficha oficial de Flamengo e Grêmio](https://gremio.net/futebol/ficha/3704), o [arquivo do River Plate](https://www.cariverplate.com.ar/docs/socios/memoria-2019-2020-anexo.pdf), o [registro da AFA](https://www.afa.com.ar/ligapro/posts/river-recibira-a-boca-a-partir-de-las-21.30-en-la-primera-semifinal-de-la-copa-libertadores), o [arquivo da FIFA](https://ipt.fifa.com/de/tournaments/mens/worldcup/2002korea-japan/news/18-uhr-im-stream-ronaldo-fuhrt-brasilien-zum-funften-stern) e a [ficha da Federação Turca](https://www.tff.org/Default.aspx?macId=4508&pageId=528). A inspiração para o fluxo de sorteio, escalação e calendário veio de [7a0](https://7a0.com.br/como-jogar) e [38–0](https://38zero.com.br/jogo-de-draft-de-futebol). A simulação e os quadrangulares são regras do Bombástico.
+
+Elencos adicionais de seleções: [Tchecoslováquia de 1962](https://datencenter.dfb.de/en/data-center/fifa-world-cup/1962-in-chile/final/136944), [Holanda de 1974](https://inside.fifa.com/fr/news/une-finale-totale-1168747) e [Croácia de 2022](https://www.fifa.com/en/articles/world-cup-qatar-2022-croatia-v-morocco-when-where-and-team-news-third-place-play-off-preview).
 
 ### Imagens das cartas de anime
 

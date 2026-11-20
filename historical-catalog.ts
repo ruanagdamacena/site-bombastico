@@ -3,6 +3,11 @@ export const formations = {
   '4-4-2': { GOL: 1, DEF: 4, MEI: 4, ATA: 2 },
 } as const
 
+export const formationLabels = {
+  '4-3-3': ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'VOL', 'MC', 'MEI', 'PD', 'CA', 'PE'],
+  '4-4-2': ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'MD', 'VOL', 'MC', 'ME', 'ATA', 'ATA'],
+} as const
+
 export const tactics = {
   equilibrado: { name: 'Equilibrado', attack: 0, defense: 0 },
   ofensivo: { name: 'Ofensivo', attack: 5, defense: -4 },
@@ -72,8 +77,42 @@ export const competitions = {
         ATA: [['Seol Ki-hyeon', 82], ['Ahn Jung-hwan', 86], ['Lee Chun-soo', 82]],
       } },
     ] satisfies Squad[],
+    scouting: [
+      { name: 'Holanda', year: '1974', players: {
+        GOL: [['Jan Jongbloed', 82]],
+        DEF: [['Wim Suurbier', 86], ['Wim Rijsbergen', 82], ['Arie Haan', 87], ['Ruud Krol', 92]],
+        MEI: [['Wim Jansen', 85], ['Johan Neeskens', 92], ['Wim van Hanegem', 91]],
+        ATA: [['Johnny Rep', 87], ['Johan Cruyff', 97], ['Rob Rensenbrink', 90]],
+      } },
+      { name: 'Tchecoslováquia', year: '1962', players: {
+        GOL: [['Viliam Schrojf', 88]],
+        DEF: [['Jiří Tichý', 81], ['Svatopluk Pluskal', 85], ['Ján Popluhár', 89], ['Ladislav Novák', 86]],
+        MEI: [['Josef Masopust', 94], ['Andrej Kvašňák', 86], ['Tomáš Pospíchal', 83]],
+        ATA: [['Adolf Scherer', 86], ['Josef Kadraba', 84], ['Josef Jelínek', 82]],
+      } },
+      { name: 'Croácia', year: '2022', players: {
+        GOL: [['Dominik Livaković', 88]],
+        DEF: [['Josip Juranović', 82], ['Dejan Lovren', 82], ['Joško Gvardiol', 90], ['Borna Sosa', 83]],
+        MEI: [['Luka Modrić', 94], ['Marcelo Brozović', 88], ['Mateo Kovačić', 87]],
+        ATA: [['Andrej Kramarić', 85], ['Ivan Perišić', 88], ['Mislav Oršić', 83]],
+      } },
+    ] satisfies (Squad & { year: string })[],
   },
 }
 
 export type Competition = keyof typeof competitions
-export type HistoricalCard = { id: string; name: string; team: string; position: Position; rating: number }
+export type HistoricalCard = { id: string; name: string; team: string; year: string; position: Position; rating: number; reserve?: boolean }
+
+export const squadReserves: Record<string, [string, Position, number][]> = {
+  Flamengo: [['César', 'GOL', 75], ['Rodinei', 'DEF', 78], ['Diego Ribas', 'MEI', 83], ['Vitinho', 'ATA', 80]],
+  Grêmio: [['Júlio César', 'GOL', 77], ['David Braz', 'DEF', 79], ['Thaciano', 'MEI', 77], ['Pepê', 'ATA', 80]],
+  'River Plate': [['Enrique Bologna', 'GOL', 75], ['Paulo Díaz', 'DEF', 80], ['Juan Fernando Quintero', 'MEI', 86], ['Julián Álvarez', 'ATA', 78]],
+  'Boca Juniors': [['Marcos Díaz', 'GOL', 76], ['Júnior Alonso', 'DEF', 80], ['Nicolás Capaldo', 'MEI', 78], ['Mauro Zárate', 'ATA', 82]],
+  Brasil: [['Dida', 'GOL', 88], ['Belletti', 'DEF', 83], ['Juninho Paulista', 'MEI', 86], ['Edílson', 'ATA', 83]],
+  Alemanha: [['Hans-Jörg Butt', 'GOL', 83], ['Marko Rehmer', 'DEF', 81], ['Lars Ricken', 'MEI', 82], ['Gerald Asamoah', 'ATA', 81]],
+  Turquia: [['Ömer Çatkıç', 'GOL', 77], ['Hakan Ünsal', 'DEF', 82], ['Okan Buruk', 'MEI', 84], ['Nihat Kahveci', 'ATA', 87]],
+  'Coreia do Sul': [['Kim Byung-ji', 'GOL', 79], ['Choi Jin-cheul', 'DEF', 82], ['Kim Nam-il', 'MEI', 83], ['Hwang Sun-hong', 'ATA', 85]],
+  Holanda: [['Eddy Treijtel', 'GOL', 80], ['Rinus Israël', 'DEF', 85], ['Theo de Jong', 'MEI', 84], ['Piet Keizer', 'ATA', 88]],
+  Tchecoslováquia: [['František Schmucker', 'GOL', 77], ['Jan Lála', 'DEF', 81], ['Jozef Bomba', 'DEF', 79], ['Titus Buberník', 'MEI', 82]],
+  Croácia: [['Ivica Ivušić', 'GOL', 79], ['Josip Stanišić', 'DEF', 81], ['Lovro Majer', 'MEI', 83], ['Bruno Petković', 'ATA', 84]],
+}

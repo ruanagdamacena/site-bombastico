@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { competitions, formations, tactics, type Competition, type Formation, type HistoricalCard, type Position, type Tactic } from './historical-catalog.ts'
+import { competitions, formations, squadReserves, tactics, type Competition, type Formation, type HistoricalCard, type Position, type Tactic } from './historical-catalog.ts'
 
 const positions: Position[] = ['GOL', 'DEF', 'MEI', 'ATA']
 const schedule = [
@@ -8,11 +8,18 @@ const schedule = [
   [[0, 2], [1, 3]],
   [[0, 3], [1, 2]],
 ]
-const portfolio = (competition: Competition): HistoricalCard[] => competitions[competition].teams.flatMap(team =>
-  positions.flatMap(position => team.players[position].map(([name, rating]) => ({
-    id: team.name + '|' + name, name, team: team.name, position, rating,
-  }))),
-)
+function portfolio(competition: Competition): HistoricalCard[] {
+  const config = competitions[competition]
+  const teams = [...config.teams.map(team => ({ ...team, year: config.year })), ...('scouting' in config ? config.scouting : [])]
+  return teams.flatMap(team => [
+    ...positions.flatMap(position => team.players[position].map(([name, rating]) => ({
+      id: team.name + '|' + name, name, team: team.name, year: team.year, position, rating,
+    }))),
+    ...squadReserves[team.name].map(([name, position, rating]) => ({
+      id: team.name + '|' + name, name, team: team.name, year: team.year, position, rating, reserve: true,
+    })),
+  ])
+}
 
 type Team = { name: string; lineup: HistoricalCard[]; tactic: Tactic }
 type Goal = { minute: number; side: 'home' | 'away'; scorer: string }
@@ -23,6 +30,9 @@ type Run = {
   formation: Formation
   playerName: string
   picks: string[]
+  pickSlots?: number[]
+  draftVersion?: 2
+  drawnTeam?: { name: string; year: string }
   offer: string[]
   opponents: string[]
   reroll: boolean
@@ -38,12 +48,20 @@ function slots(formation: Formation) {
   return positions.flatMap(position => Array<Position>(formations[formation][position]).fill(position))
 }
 
-function offerFor(run: Run, cards: HistoricalCard[], exclude: string[] = []) {
-  const position = slots(run.formation)[run.picks.length]
-  const eligible = cards.filter(card => card.position === position && !run.picks.includes(card.id))
-  const fresh = eligible.filter(card => !exclude.includes(card.id))
-  const selected = takeRandom(fresh, 3)
-  return [...selected, ...takeRandom(eligible.filter(card => exclude.includes(card.id)), 3 - selected.length)].map(card => card.id)
+function openPositions(run: Run) {
+  return new Set(slots(run.formation).filter((_, index) => !run.pickSlots?.includes(index)))
+}
+
+function drawSquad(run: Run, cards: HistoricalCard[], exclude?: string) {
+  const positions = openPositions(run)
+  const eligible = cards.filter(card => positions.has(card.position) && !run.picks.includes(card.id))
+  const teams = [...new Set(eligible.map(card => card.team))]
+  const alternatives = teams.filter(team => team !== exclude)
+  const [team] = takeRandom(alternatives.length ? alternatives : teams, 1)
+  const drawn = cards.filter(card => card.team === team)
+  if (!drawn.length) throw new Error('Não há jogadores disponíveis para as vagas restantes.')
+  run.drawnTeam = { name: team, year: drawn[0].year }
+  run.offer = drawn.filter(card => !run.picks.includes(card.id)).map(card => card.id)
 }
 
 function strength(team: Team) {
@@ -108,12 +126,16 @@ function view(run: Run, cards: HistoricalCard[]) {
   const names = [run.playerName, ...run.opponents]
   const cardById = new Map(cards.map(card => [card.id, card]))
   const visible = (id: string) => {
-    const { name, team, position } = cardById.get(id)!
-    return { id, name, team, position }
+    const { name, team, year, position } = cardById.get(id)!
+    return { id, name, team, year, position }
   }
+  const lineup = slots(run.formation).map((_, slot) => {
+    const pickIndex = run.pickSlots?.indexOf(slot) ?? slot
+    return pickIndex >= 0 && run.picks[pickIndex] ? visible(run.picks[pickIndex]) : null
+  })
   return {
     revision: run.revision, competition: run.competition, formation: run.formation, slots: slots(run.formation), reroll: run.reroll,
-    picks: run.picks.map(visible), offer: run.offer.map(visible),
+    lineup, picks: run.picks.map(visible), offer: run.offer.map(visible), drawnTeam: run.drawnTeam,
     rounds: run.rounds, names, table: tableFor(names, run.rounds),
   }
 }
@@ -135,30 +157,56 @@ export function historicalDraft(db: DatabaseSync) {
     const cards = portfolio(competition)
     const row = read.get(account.id, competition)
     let run = row ? JSON.parse(String(row.state)) as Run : undefined
+    if (run && !run.draftVersion) {
+      run.draftVersion = 2
+      run.pickSlots = run.picks.map((_, index) => index)
+      run.revision = randomUUID()
+      run.offer = []
+      save.run(account.id, competition, JSON.stringify(run))
+    }
     if (action === 'state') return { run: run ? view(run, cards) : null }
 
     if (action === 'start') {
       if (run && run.rounds.length < schedule.length) return { run: view(run, cards) }
       const formation = body.formation
       if (formation !== '4-3-3' && formation !== '4-4-2') throw new Error('Escolha uma formação.')
-      run = { revision: randomUUID(), competition, formation, playerName: 'XI de ' + account.nickname, picks: [], offer: [],
+      run = { revision: randomUUID(), competition, formation, playerName: 'XI de ' + account.nickname, picks: [], pickSlots: [],
+        draftVersion: 2, offer: [],
         opponents: takeRandom(competitions[competition].teams.map(team => team.name), 3), reroll: true, rounds: [] }
-      run.offer = offerFor(run, cards)
     } else {
       if (!run) throw new Error('Inicie um draft histórico.')
       if (body.revision !== run.revision) throw new Error('A campanha mudou. Reabra o draft para continuar.')
-      if (action === 'pick' || action === 'reroll') {
-        if (body.step !== run.picks.length || !run.offer.length) throw new Error('A escolha mudou. Atualize a tela.')
-        const currentOffer = run.offer
+      if (action === 'draw' || action === 'reroll') {
+        if (run.picks.length === 11) throw new Error('A escalação está completa.')
         if (action === 'reroll') {
-          if (!run.reroll) throw new Error('O novo sorteio já foi usado.')
+          if (!run.reroll || !run.drawnTeam) throw new Error('O novo sorteio não está disponível.')
           run.reroll = false
-          run.offer = offerFor(run, cards, currentOffer)
-        } else {
+        } else if (run.drawnTeam) throw new Error('Escolha um jogador do elenco já sorteado.')
+        drawSquad(run, cards, run.drawnTeam?.name)
+      } else if (action === 'pick' || action === 'move') {
+        const lineupSlots = slots(run.formation)
+        const assigned = run.pickSlots!
+        const slot = typeof body.slot === 'number' ? body.slot : -1
+        if (!Number.isInteger(slot) || !lineupSlots[slot]) throw new Error('Escolha uma vaga no campo.')
+        const occupant = assigned.indexOf(slot)
+        if (action === 'pick') {
           const id = String(body.id)
-          if (!currentOffer.includes(id)) throw new Error('Escolha um jogador sorteado.')
+          const card = cards.find(candidate => candidate.id === id)
+          if (occupant >= 0 || !run.offer.includes(id) || card?.position !== lineupSlots[slot]) {
+            throw new Error('Escolha uma vaga livre da mesma posição.')
+          }
           run.picks.push(id)
-          run.offer = offerFor(run, cards)
+          assigned.push(slot)
+          run.offer = []
+          delete run.drawnTeam
+        } else {
+          const from = typeof body.from === 'number' ? body.from : -1
+          const moving = assigned.indexOf(from)
+          if (run.rounds.length > 0 || moving < 0 || from === slot || lineupSlots[from] !== lineupSlots[slot]) {
+            throw new Error('Selecione outro jogador ou uma vaga da mesma linha.')
+          }
+          assigned[moving] = slot
+          if (occupant >= 0) assigned[occupant] = from
         }
       } else if (action === 'simulate') {
         const round = run.rounds.length
@@ -169,7 +217,7 @@ export function historicalDraft(db: DatabaseSync) {
         if (tactic !== 'equilibrado' && tactic !== 'ofensivo' && tactic !== 'defensivo') throw new Error('Escolha uma tática.')
         const team: Team = { name: run.playerName, lineup: run.picks.map(id => cards.find(card => card.id === id)!), tactic }
         const teams: Team[] = [team, ...run.opponents.map(name => ({
-          name, lineup: cards.filter(card => card.team === name), tactic: 'equilibrado' as const,
+          name, lineup: cards.filter(card => card.team === name && !card.reserve), tactic: 'equilibrado' as const,
         }))]
         run.rounds.push(schedule[round].map(([home, away]) => simulate(teams, home, away)))
       } else {
