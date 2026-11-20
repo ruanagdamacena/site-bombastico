@@ -32,7 +32,7 @@ form label { flex: 1 1 140px; }
 .offer { margin-bottom: 14px; }
 .offer h2 { font-size: clamp(1.5rem, 5vw, 3rem); }
 .draw-window { min-height: 112px; text-align: center; }
-[data-mode="anime"] .draw-window { min-height: 172px; }
+[data-mode="anime"] .draw-window { min-height: 132px; }
 .draw-slot {
   --slot-color: #83947d;
   position: relative;
@@ -75,7 +75,6 @@ form label { flex: 1 1 140px; }
   .draw-slot[data-state="revealed"]::after { content: none; }
 }
 .card-context { color: var(--muted, #d5e4cd); margin-bottom: 6px; }
-.card-clue { margin-bottom: 8px; }
 .tier { color: var(--accent); }
 .boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
 .attributes { display: grid; gap: 6px; }

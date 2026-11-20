@@ -5,7 +5,7 @@ import './style.css'
 
 type Card = { name: string } & (
   { club: string; season: string } |
-  { universe: string; arc: string; clue: string; tier: string }
+  { universe: string; arc: string; tier: string }
 )
 type Room = {
   code: string; bot: boolean; mode: Mode; seat: number; step: number
@@ -168,10 +168,7 @@ function App() {
             </div>
             {rolling ? <p className="draw-status">Sorteando…</p> : <div className="draw-details">
               <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
-              {'clue' in room.offer && <>
-                <p className="card-clue">{room.offer.clue}</p>
-                <span className="tier">{room.offer.tier}</span>
-              </>}
+              {'universe' in room.offer && <span className="tier">{room.offer.tier}</span>}
             </div>}
           </div>}
         </>}

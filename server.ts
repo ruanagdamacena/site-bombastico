@@ -57,8 +57,8 @@ function cardsFor(room: Room): readonly DraftCard[] {
 
 function publicCard(card: DraftCard) {
   if ('universe' in card) {
-    const { name, universe, arc, clue, tier } = card
-    return { name, universe, arc, clue, tier: animeTiers[tier] }
+    const { name, universe, arc, tier } = card
+    return { name, universe, arc, tier: animeTiers[tier] }
   }
   const { name, club, season } = card
   return { name, club, season }
