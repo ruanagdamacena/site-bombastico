@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
 import { findAnimePortrait } from './anime-portraits'
+import { awardMatch, loadProfile, matchCoins, profileMedals, ProfilePanel, saveProfile, type Profile } from './profile'
 import './style.css'
 
 type Card = { name: string } & (
@@ -9,7 +10,7 @@ type Card = { name: string } & (
   { universe: string; arc: string; tier: string }
 )
 type Room = {
-  code: string; bot: boolean; mode: Mode; seat: number; step: number
+  code: string; bot: boolean; mode: Mode; match: number; seat: number; step: number
   offer?: Card
   players: { name: string; picks: (number | null)[]; sources?: (Card | null)[] }[]
 }
@@ -67,11 +68,30 @@ function App() {
   const [mode, setMode] = useState<Mode>(() =>
     new URLSearchParams(location.search).get('modo') === 'anime' ? 'anime' : 'football')
   const [token, setToken] = useState(() => sessionStorage.getItem('draft:' + code) ?? '')
-  const [name, setName] = useState('')
+  const [profile, setProfile] = useState(loadProfile)
+  const [panel, setPanel] = useState<'play' | 'profile' | 'shop'>('play')
+  const [name, setName] = useState(profile.name)
   const [room, setRoom] = useState<Room>()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [scoreBeat, setScoreBeat] = useState<{ attribute: string; score: number }>()
+
+  function updateProfile(change: (current: Profile) => Profile) {
+    setProfile(saveProfile(change))
+  }
+
+  useEffect(() => {
+    const sync = () => setProfile(loadProfile())
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!scoreBeat) return
+    const timer = window.setTimeout(() => setScoreBeat(undefined), 1350)
+    return () => window.clearTimeout(timer)
+  }, [scoreBeat])
 
   useEffect(() => {
     if (!token || !code || busy) return
@@ -95,12 +115,18 @@ function App() {
     try {
       const next = await api(action, { name, code, token, ...details })
       if (next.token) {
+        updateProfile(current => ({ ...current, name: next.room.players[next.room.seat].name }))
         sessionStorage.setItem('draft:' + next.room.code, next.token)
         setToken(next.token)
         setCode(next.room.code)
         const params = new URLSearchParams({ sala: next.room.code })
         if (next.room.mode === 'anime') params.set('modo', 'anime')
         history.replaceState(null, '', '?' + params)
+      }
+      if (action === 'pick') {
+        const index = (details as { attribute: number }).attribute
+        const score = next.room.players[next.room.seat].picks[index]
+        if (score !== null) setScoreBeat({ attribute: modes[next.room.mode].attributes[index], score })
       }
       setRoom(next.room)
     } catch (failure) {
@@ -111,6 +137,8 @@ function App() {
   }
 
   function leave() {
+    setScoreBeat(undefined)
+    setPanel('play')
     setMode(activeMode)
     setRoom(undefined)
     setCode('')
@@ -126,7 +154,7 @@ function App() {
   const ready = room?.players.length === 2
   const finished = room?.step === 2 * attributes.length
   const myTurn = ready && !finished && room.step % 2 === room.seat
-  const drawKey = ready && room.offer && !finished ? room.code + ':' + room.step : ''
+  const drawKey = ready && room.offer && !finished && !scoreBeat ? room.code + ':' + room.step : ''
   const [revealedDraw, setRevealedDraw] = useState('')
   const [drawPreview, setDrawPreview] = useState({ key: '', index: 0 })
   const rolling = Boolean(drawKey && drawKey !== revealedDraw)
@@ -148,14 +176,37 @@ function App() {
   }, [drawKey])
   const scores = finished ? room.players.map(player =>
     player.picks.reduce<number>((total, value) => total + (value ?? 0), 0) / attributes.length) : []
+  const won = Boolean(finished && scores[room.seat] > scores[1 - room.seat])
+  const completedMatch = finished ? room.code + ':' + (room.match ?? 1) : ''
+  const best = finished ? Math.max(...room.players[room.seat].picks.map(score => score ?? 0)) : 0
+  const previousMedals = finished ? profileMedals({
+    ...profile, results: Object.fromEntries(Object.entries(profile.results).filter(([key]) => key !== completedMatch)),
+  }) : []
+  const earnedMedals = finished ? profileMedals(profile).filter((medal, index) =>
+    medal.unlocked && !previousMedals[index].unlocked) : []
+  const rarity = !rolling && room?.offer && 'tier' in room.offer &&
+    (room.offer.tier === 'Lendas' ? 'legend' : room.offer.tier === 'Elites' ? 'elite' : undefined)
+  useEffect(() => {
+    if (!completedMatch) return
+    setProfile(saveProfile(current => awardMatch(current, completedMatch, { mode: activeMode, won, best })))
+  }, [completedMatch, activeMode, won, best])
 
   return <main data-mode={activeMode}>
-    <header><span>BOMBÁSTICO</span>{room && <button className="quiet" onClick={leave} disabled={busy}>Voltar ao início</button>}</header>
+    <header><span>BOMBÁSTICO</span>{room ? <button className="quiet" onClick={leave} disabled={busy}>Voltar ao início</button> :
+      <nav className="main-nav" aria-label="Menu principal">
+        {(['play', 'profile', 'shop'] as const).map((tab, index) => <button key={tab}
+          className={panel === tab ? '' : 'quiet'} aria-pressed={panel === tab}
+          onClick={() => { if (tab === 'play' && panel !== 'play') setName(profile.name); setPanel(tab) }}>
+          {['Jogar', 'Perfil', 'Loja'][index]}
+        </button>)}
+      </nav>}
+    </header>
     <section className="heading">
-      <h1>{theme}<br /><em>{subtitle}</em></h1>
+      {!room && panel !== 'play' ? <h1>{panel === 'profile' ? 'Perfil' : 'Loja'}</h1> : <h1>{theme}<br /><em>{subtitle}</em></h1>}
     </section>
     {error && <p className="error" role="alert">{error}</p>}
-    {!room ? <section className="panel lobby">
+    {!room && panel !== 'play' ? <ProfilePanel profile={profile} tab={panel} update={updateProfile} /> :
+    !room ? <section className="panel lobby">
       <div className="mode-picker" role="group" aria-label="Modo de jogo">
         {(['football', 'anime'] as const).map(option => <button
           key={option} className={mode === option ? '' : 'quiet'} aria-pressed={mode === option} disabled={busy}
@@ -180,12 +231,23 @@ function App() {
         }}>{copied ? 'Link copiado' : 'Copiar convite'}</button>}
       </div>
       <section className="panel offer" aria-live="polite">
-        {!ready ? <h2>Aguardando seu amigo</h2> : finished ? <>
-          <h2>{scores[0] === scores[1] ? 'Empate' : (scores[room.seat] > scores[1 - room.seat] ? 'Você venceu!' : 'Você perdeu')}</h2>
+        {!ready ? <h2>Aguardando seu amigo</h2> : scoreBeat ? <div className="score-beat" data-high={scoreBeat.score >= 90}>
+          <p>Atributo garantido</p><h2>{scoreBeat.attribute}</h2><strong>{scoreBeat.score}</strong>
+        </div> : finished ? <div className="match-result" data-win={won}>
+          <h2>{scores[0] === scores[1] ? 'Empate' : won ? 'Você venceu!' : 'Você perdeu'}</h2>
+          <p>Overall final</p>
+          <div className="result-scores">{[room.seat, 1 - room.seat].map(seat => <div key={seat}>
+            <small>{room.players[seat].name}</small>
+            <strong>{scores[seat].toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</strong>
+          </div>)}</div>
+          <p>+{matchCoins(won)} moedas</p>
+          {earnedMedals.length > 0 && <ul className="result-medals">
+            {earnedMedals.map(medal => <li key={medal.name}>Conquista · {medal.name}</li>)}
+          </ul>}
           <button disabled={busy} onClick={() => act('rematch')}>Jogar revanche</button>
-        </> : <>
+        </div> : <>
           <p>Rodada {Math.floor(room.step / 2) + 1} de {attributes.length} · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
-          {room.offer && <div className="draw-window" key={drawKey}>
+          {room.offer && <div className="draw-window" key={drawKey} data-rarity={rarity || undefined}>
             <div className="draw-slot" data-state={rolling ? 'rolling' : 'revealed'} data-preview={previewIndex % 3}>
               {rolling ? <span className="draw-name" aria-hidden="true">{previewName}</span> : <h2>{room.offer.name}</h2>}
             </div>
@@ -201,11 +263,10 @@ function App() {
       </section>
       <div className="boards">{room.players.map((player, seat) => <section className="panel" key={seat}>
         <h2>{player.name}{seat === room.seat && ' (você)'}</h2>
-        {finished && <p>Overall {scores[seat].toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</p>}
         <div className="attributes">{attributes.map((attribute, index) => {
           const source = player.sources?.[index]
           return <button key={attribute} className="quiet"
-            disabled={busy || rolling || !myTurn || seat !== room.seat || player.picks[index] !== null}
+            disabled={busy || rolling || Boolean(scoreBeat) || !myTurn || seat !== room.seat || player.picks[index] !== null}
             onClick={() => act('pick', { attribute: index, step: room.step })}>
             <span>{attribute}{source && <small>{[source.name, ...cardContext(source)].join(' · ')}</small>}</span>
             <strong>{player.picks[index] ?? '—'}</strong>

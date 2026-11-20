@@ -16,6 +16,7 @@ type Room = {
   mode?: Mode
   seasonCards?: boolean
   catalogVersion?: 2 | 3
+  match?: number
 }
 const db = new DatabaseSync(process.env.DRAFT_DATABASE ?? 'draft.sqlite')
 db.exec('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL)')
@@ -75,7 +76,7 @@ function view(room: Room, seat: number) {
   const cards = cardsFor(room)
   const card = cards[room.offers[step]]
   return {
-    code: room.code, bot: room.bot, mode: room.mode ?? 'football', seat, step,
+    code: room.code, bot: room.bot, mode: room.mode ?? 'football', match: room.match ?? 1, seat, step,
     players: room.players.map(({ name, picks, sources }) => ({
       name, picks, sources: sources?.map(id => id === null ? null : publicCard(cards[id])),
     })),
@@ -133,6 +134,7 @@ function handle(action: string, body: Record<string, unknown>) {
     room.players = room.players.map(({ name, token }) => makePlayer(name, mode, token))
     room.catalogVersion = 3
     room.offers = deal(mode)
+    room.match = (room.match ?? 1) + 1
     if (!room.bot) room.players.reverse()
     seat = room.players.findIndex(player => player.token === body.token)
     save.run(code, JSON.stringify(room))

@@ -28,6 +28,10 @@ Referências das novas séries: [Demon Slayer](https://demonslayer-anime.com/hta
 
 Partidas abertas antes da troca usam o catálogo com que começaram até a próxima revanche.
 
+## Perfil e cosméticos
+
+O perfil guarda apelido, conquistas e cosméticos no navegador. Cada partida concluída rende 20 moedas, com 10 a mais por vitória. As moedas desbloqueiam banners, títulos e emblemas na loja do jogo. Este protótipo usa progresso local por navegador, sem conta ou pagamentos.
+
 ### Imagens das cartas de anime
 
 As 80 cartas mostram imagens após o sorteio, em uma moldura com proporção fixa que mantém a imagem inteira visível. O jogo distingue as imagens da fase e os retratos gerais de personagem. No protótipo local, os arquivos em `public/anime-portraits/` são opcionais e ficam fora do Git. Quando um arquivo local está indisponível, a carta tenta carregar a imagem da fonte. As permissões para publicar as artes ainda precisam ser confirmadas.

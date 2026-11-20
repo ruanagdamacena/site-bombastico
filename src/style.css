@@ -98,3 +98,64 @@ form label { flex: 1 1 140px; }
 .attributes button:disabled { opacity: 1; border-color: var(--line, #465444); }
 .attributes button:not(:disabled) { border-color: var(--accent); }
 .error { color: #ffd0b9; }
+
+.main-nav { display: flex; flex-wrap: wrap; gap: 6px; justify-content: end; }
+.profile-content { display: grid; gap: 16px; }
+.profile-content h2, .profile-content p { margin-bottom: 0; }
+.profile-banner, .banner-sample {
+  --banner-base: #213d35;
+  --banner-mark: #69c4aa;
+  background: repeating-linear-gradient(123deg, transparent 0 36px, color-mix(in srgb, var(--banner-mark) 18%, transparent) 38px 40px, transparent 42px 54px),
+    linear-gradient(125deg, #171524 12%, var(--banner-base));
+}
+[data-banner="eclipse"] { --banner-base: #54266f; --banner-mark: #ca9bf7; }
+[data-banner="chamas"] { --banner-base: #73392a; --banner-mark: #ff9b57; }
+.profile-banner { min-height: 164px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 20px; border: 1px solid #749689; border-radius: 16px; }
+.profile-banner h2 { overflow-wrap: anywhere; }
+.profile-emblem { flex: 0 0 54px; min-height: 54px; display: grid; place-items: center; font-size: 1.75rem; background: #171524; border: 1px solid #adbaa9; border-radius: 14px; }
+.profile-wallet { margin-left: auto; padding: 6px 10px; border-radius: 8px; background: #171524; }
+.profile-stats { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 22px; }
+.profile-stats label { flex: 1 1 220px; }
+.medal-list, .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 10px; }
+.medal-list { list-style: none; margin: 0; padding: 0; }
+.medal-list li, .shop-item { display: grid; gap: 7px; }
+.medal-list small { color: var(--muted, #cbd7c9); }
+.medal-list [data-unlocked="true"] { border-color: var(--accent); }
+.medal-list [data-unlocked="true"] small { color: var(--accent); }
+.shop-grid { margin-top: 8px; }
+.shop-item { align-content: start; }
+.banner-sample { height: 48px; border-radius: 6px; }
+.shop-symbol { font-size: 1.6rem; }
+
+.score-beat, .match-result { display: grid; gap: 10px; text-align: center; place-content: center; }
+.score-beat { min-height: 136px; }
+[data-mode="anime"] .score-beat { min-height: 380px; }
+.score-beat p, .score-beat h2, .match-result h2, .match-result p { margin: 0; }
+.score-beat > strong { color: var(--accent); font-size: clamp(3.6rem, 11vw, 6.5rem); line-height: .95; animation: score-pop .34s ease-out both; }
+.score-beat[data-high="true"] > strong { color: #ffdc79; text-shadow: 0 0 24px #e8aa5570; }
+.match-result { padding: 16px 0; animation: result-arrival .55s ease-out both; }
+.match-result[data-win="true"] h2 { color: #ffdc79; }
+.result-scores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.result-scores div { display: grid; gap: 3px; background: #15191c; border: 1px solid var(--line, #465444); padding: 9px; border-radius: 10px; }
+.result-scores small { overflow-wrap: anywhere; }
+.result-scores strong { font-size: clamp(1.5rem, 5vw, 2.55rem); }
+.result-medals { display: grid; gap: 4px; list-style: none; margin: 0; padding: 0; color: var(--accent); }
+.draw-window[data-rarity="elite"] { --rarity-glow: #a8dcff; }
+.draw-window[data-rarity="legend"] { --rarity-glow: #ffdc79; }
+.draw-window[data-rarity] .draw-slot, .draw-window[data-rarity] .portrait-frame {
+  border-color: var(--rarity-glow);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--rarity-glow) 42%, transparent), inset 0 0 14px color-mix(in srgb, var(--rarity-glow) 22%, transparent);
+}
+.draw-window[data-rarity] .draw-slot { animation: rarity-light .62s ease-out both; }
+.draw-window[data-rarity] .draw-slot::after { border-color: var(--rarity-glow); }
+.draw-window[data-rarity] .draw-slot h2, .draw-window[data-rarity] .tier { color: var(--rarity-glow); }
+.draw-window[data-rarity] .portrait-frame { animation: rarity-light .72s ease-out both; }
+@keyframes score-pop { from { transform: translateY(7px) scale(.84); opacity: .35; } to { transform: none; opacity: 1; } }
+@keyframes result-arrival { from { transform: translateY(8px); opacity: .35; } to { transform: none; opacity: 1; } }
+@keyframes rarity-light {
+  from { filter: brightness(1.35); }
+  to { filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .score-beat > strong, .match-result, .draw-window[data-rarity] .draw-slot, .draw-window[data-rarity] .portrait-frame { animation: none; }
+}
