@@ -3,10 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 
 const attributes = ['Finalização', 'Passe', 'Drible', 'Velocidade', 'Defesa', 'Físico']
+type Card = { name: string; club: string; season: string; tier: string; fictional: boolean }
 type Room = {
   code: string; bot: boolean; seat: number; step: number
-  offer?: { name: string; tier: string; fictional: boolean }
-  players: { name: string; picks: (number | null)[] }[]
+  offer?: Card
+  players: { name: string; picks: (number | null)[]; sources?: (Card | null)[] }[]
 }
 
 async function api(action: string, body: object) {
@@ -109,18 +110,22 @@ function App() {
         </> : <>
           <p>Rodada {Math.floor(room.step / 2) + 1} de 6 · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
           <h2>{room.offer?.name}</h2>
+          {room.offer && <p className="card-season">{room.offer.club} · {room.offer.season}</p>}
           <span className="tier">{room.offer?.tier}{room.offer?.fictional && ' · Atleta fictício'}</span>
         </>}
       </section>
       <div className="boards">{room.players.map((player, seat) => <section className="panel" key={seat}>
         <h2>{player.name}{seat === room.seat && ' (você)'}</h2>
         {finished && <p>Overall {scores[seat].toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</p>}
-        <div className="attributes">{attributes.map((attribute, index) => <button
-          key={attribute} className="quiet"
-          disabled={busy || !myTurn || seat !== room.seat || player.picks[index] !== null}
-          onClick={() => act('pick', { attribute: index, step: room.step })}>
-          {attribute}<strong>{player.picks[index] ?? '—'}</strong>
-        </button>)}</div>
+        <div className="attributes">{attributes.map((attribute, index) => {
+          const source = player.sources?.[index]
+          return <button key={attribute} className="quiet"
+            disabled={busy || !myTurn || seat !== room.seat || player.picks[index] !== null}
+            onClick={() => act('pick', { attribute: index, step: room.step })}>
+            <span>{attribute}{source && <small>{source.name} · {source.club} · {source.season}</small>}</span>
+            <strong>{player.picks[index] ?? '—'}</strong>
+          </button>
+        })}</div>
       </section>)}</div>
     </>}
   </main>

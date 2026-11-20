@@ -2,10 +2,10 @@ import { createServer } from 'node:http'
 import { randomBytes, randomInt, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { DatabaseSync } from 'node:sqlite'
-import { attributes, catalog, tiers } from './catalog.ts'
+import { attributes, baseCatalog, catalog, tiers, type Card } from './catalog.ts'
 
-type Player = { name: string; token: string; picks: (number | null)[] }
-type Room = { code: string; bot: boolean; players: Player[]; offers: number[] }
+type Player = { name: string; token: string; picks: (number | null)[]; sources?: (number | null)[] }
+type Room = { code: string; bot: boolean; players: Player[]; offers: number[]; seasonCards?: boolean }
 const db = new DatabaseSync(process.env.DRAFT_DATABASE ?? 'draft.sqlite')
 db.exec('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL)')
 const read = db.prepare('SELECT state FROM rooms WHERE code = ?')
@@ -15,22 +15,46 @@ const turn = (room: Room) => room.players.flatMap(player => player.picks).filter
 
 function deal() {
   const offers: number[] = []
+  const drawn = new Set<number>()
+  const athletesBySeat = [new Set<number>(), new Set<number>()]
   for (let round = 0; round < attributes.length; round++) {
     const tier = [0, 0, 1, 1, 1, 2, 2, 3][randomInt(8)]
-    const available = catalog.filter(athlete => athlete.tier === tier && !offers.includes(athlete.id))
-    offers.push(available.splice(randomInt(available.length), 1)[0].id)
-    offers.push(available[randomInt(available.length)].id)
+    for (const usedAthletes of athletesBySeat) {
+      const available = catalog.filter(card =>
+        card.tier === tier && !drawn.has(card.id) && !usedAthletes.has(card.athleteId))
+      const card = available[randomInt(available.length)]
+      drawn.add(card.id)
+      usedAthletes.add(card.athleteId)
+      offers.push(card.id)
+    }
   }
   return offers
 }
 
+function cardsFor(room: Room) {
+  return room.seasonCards ? catalog : baseCatalog
+}
+
+function publicCard({ name, club, season, tier, fictional }: Card) {
+  return { name, club, season, tier: tiers[tier], fictional }
+}
+
+function pick(player: Player, index: number, card: Card) {
+  player.picks[index] = card.ratings[index]
+  player.sources ??= attributes.map(() => null)
+  player.sources[index] = card.id
+}
+
 function view(room: Room, seat: number) {
   const step = turn(room)
-  const athlete = catalog[room.offers[step]]
+  const cards = cardsFor(room)
+  const card = cards[room.offers[step]]
   return {
     code: room.code, bot: room.bot, seat, step,
-    players: room.players.map(({ name, picks }) => ({ name, picks })),
-    offer: athlete && { name: athlete.name, tier: tiers[athlete.tier], fictional: athlete.fictional },
+    players: room.players.map(({ name, picks, sources }) => ({
+      name, picks, sources: sources?.map(id => id === null ? null : publicCard(cards[id])),
+    })),
+    offer: card && publicCard(card),
   }
 }
 
@@ -43,7 +67,7 @@ function handle(action: string, body: Record<string, unknown>) {
     const bot = body.bot === true
     const players = [makePlayer(name)]
     if (bot) players.push(makePlayer('Bot'))
-    const room = { code, bot, players, offers: deal() }
+    const room = { code, bot, players, offers: deal(), seasonCards: true }
     save.run(code, JSON.stringify(room))
     return { token: players[0].token, room: view(room, 0) }
   }
@@ -67,18 +91,20 @@ function handle(action: string, body: Record<string, unknown>) {
       throw new Error('O turno mudou. Aguarde a atualização.')
     }
     if (!Number.isInteger(index) || room.players[seat].picks[index] !== null) throw new Error('Escolha um atributo livre.')
-    room.players[seat].picks[index] = catalog[room.offers[step]].ratings[index]
+    const cards = cardsFor(room)
+    pick(room.players[seat], index, cards[room.offers[step]])
     if (room.bot) {
       const picks = room.players[1].picks
       const empty = picks.flatMap((pick, attribute) => pick === null ? [attribute] : [])
       const choice = empty[randomInt(empty.length)]
-      picks[choice] = catalog[room.offers[step + 1]].ratings[choice]
+      pick(room.players[1], choice, cards[room.offers[step + 1]])
     }
     save.run(code, JSON.stringify(room))
   } else if (action === 'rematch') {
     if (turn(room) !== room.offers.length) throw new Error('A partida ainda está em andamento.')
-    room.players.forEach(player => { player.picks = attributes.map(() => null) })
+    room.players = room.players.map(({ name, token }) => ({ name, token, picks: attributes.map(() => null) }))
     room.offers = deal()
+    room.seasonCards = true
     if (!room.bot) room.players.reverse()
     seat = room.players.findIndex(player => player.token === body.token)
     save.run(code, JSON.stringify(room))
