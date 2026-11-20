@@ -34,6 +34,12 @@ O apelido é escolhido no cadastro e usado na entrada da conta e nas partidas. A
 
 Cada partida concluída rende 20 moedas e 100 XP, com mais 10 moedas e 50 XP por vitória. As moedas compram banners e emblemas. A cada 100 XP o jogador sobe um nível, e a cada 10 níveis ganha um título. Títulos comprados na versão anterior continuam disponíveis no perfil.
 
+## Draft histórico
+
+O Draft histórico já permite montar um XI em 4-3-3 ou 4-4-2 e disputar um quadrangular solo. As campanhas de Libertadores 2019 e Copa de 2002 ficam salvas por conta. Escolha entre três jogadores por vaga, use um novo sorteio se quiser e escolha a tática antes de cada rodada. A tabela usa pontos, saldo e gols marcados. Em empate nesses três critérios, os times ficam em ordem alfabética.
+
+Os elencos foram adaptados à formação do jogo com notas provisórias. As referências de escalação são a [ficha oficial de Flamengo e Grêmio](https://gremio.net/futebol/ficha/3704), o [arquivo do River Plate](https://www.cariverplate.com.ar/docs/socios/memoria-2019-2020-anexo.pdf), o [registro da AFA](https://www.afa.com.ar/ligapro/posts/river-recibira-a-boca-a-partir-de-las-21.30-en-la-primera-semifinal-de-la-copa-libertadores), o [arquivo da FIFA](https://ipt.fifa.com/de/tournaments/mens/worldcup/2002korea-japan/news/18-uhr-im-stream-ronaldo-fuhrt-brasilien-zum-funften-stern) e a [ficha da Federação Turca](https://www.tff.org/Default.aspx?macId=4508&pageId=528). A inspiração para o fluxo de sorteio, escalação e calendário veio de [7a0](https://7a0.com.br/como-jogar) e [38–0](https://38zero.com.br/jogo-de-draft-de-futebol). A simulação e os quadrangulares são regras do Bombástico.
+
 ### Imagens das cartas de anime
 
 As 80 cartas mostram imagens após o sorteio, em uma moldura com proporção fixa que mantém a imagem inteira visível. O jogo distingue as imagens da fase e os retratos gerais de personagem. No protótipo local, os arquivos em `public/anime-portraits/` são opcionais e ficam fora do Git. Quando um arquivo local está indisponível, a carta tenta carregar a imagem da fonte. As permissões para publicar as artes ainda precisam ser confirmadas.

@@ -6,6 +6,7 @@ import { baseCatalog, catalog, registeredCatalog, seasonCatalog, type Card } fro
 import { animeCatalog, animeTiers, expandedAnimeCatalog, legacyAnimeCatalog, type AnimeCard } from './anime-catalog.ts'
 import { modes, type Mode } from './draft-modes.ts'
 import { accounts } from './accounts.ts'
+import { historicalDraft } from './historical-draft.ts'
 
 type DraftCard = Card | AnimeCard
 type Player = { name: string; token: string; picks: (number | null)[]; sources?: (number | null)[]; accountId?: string }
@@ -21,6 +22,7 @@ type Room = {
 }
 const db = new DatabaseSync(process.env.DRAFT_DATABASE ?? 'draft.sqlite')
 const accountStore = accounts(db)
+const historyDraft = historicalDraft(db)
 db.exec('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL)')
 const read = db.prepare('SELECT state FROM rooms WHERE code = ?')
 const save = db.prepare('INSERT INTO rooms VALUES (?, ?) ON CONFLICT(code) DO UPDATE SET state = excluded.state')
@@ -161,13 +163,15 @@ createServer(async (req, res) => {
         if (raw.length > 4096) throw new Error('Pedido muito grande.')
       }
       const action = url.pathname.slice(5)
-      if (action.startsWith('account/') && !req.headers['content-type']?.startsWith('application/json')) {
+      if ((action.startsWith('account/') || action.startsWith('history/')) && !req.headers['content-type']?.startsWith('application/json')) {
         throw new Error('Formato de pedido inválido.')
       }
       const body = JSON.parse(raw)
       const data = action.startsWith('account/')
         ? await accountStore.handle(action.slice(8), req, res, body)
-        : handle(action, body, accountStore.current(req))
+        : action.startsWith('history/')
+          ? historyDraft(action.slice(8), body, accountStore.current(req))
+          : handle(action, body, accountStore.current(req))
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       return res.end(JSON.stringify(data))
     }

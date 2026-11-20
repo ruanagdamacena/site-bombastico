@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
 import { findAnimePortrait } from './anime-portraits'
+import { HistoricalDraft } from './historical'
+import type { HistoricalView } from '../historical-draft'
 import { attachLocalProfile, awardMatch, earnedTitles, loadProfile, matchCoins, matchXp, profileLevel, profileMedals, ProfilePanel, saveProfile, type Profile } from './profile'
 import './style.css'
 
@@ -39,6 +41,7 @@ async function post<T>(action: string, body: object): Promise<T> {
 }
 const api = (action: string, body: object) => post<{ room: Room; token?: string }>(action, body)
 const accountApi = (action: string, body: object = {}) => post<{ account: Account | null }>('account/' + action, body)
+const historyApi = (action: string, body: object) => post<{ run: HistoricalView | null }>('history/' + action, body)
 
 function cardContext(card: Card) {
   return 'universe' in card ? [card.universe, card.arc] : [card.club, card.season].filter(Boolean)
@@ -104,7 +107,8 @@ function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('draft:' + code) ?? '')
   const [profile, setProfile] = useState(loadProfile)
   const [account, setAccount] = useState<Account | null>()
-  const [panel, setPanel] = useState<'play' | 'profile' | 'shop'>('play')
+  const [panel, setPanel] = useState<'play' | 'history' | 'profile' | 'shop'>(() =>
+    new URLSearchParams(location.search).get('modo') === 'historico' ? 'history' : 'play')
   const [room, setRoom] = useState<Room>()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -270,20 +274,21 @@ function App() {
   return <main data-mode={activeMode}>
     <header><span>BOMBÁSTICO</span>{room ? <button className="quiet" onClick={leave} disabled={busy}>Voltar ao início</button> :
       account && <nav className="main-nav" aria-label="Menu principal">
-        {(['play', 'profile', 'shop'] as const).map((tab, index) => <button key={tab}
+        {(['play', 'history', 'profile', 'shop'] as const).map((tab, index) => <button key={tab}
           className={panel === tab ? '' : 'quiet'} aria-pressed={panel === tab}
           onClick={() => setPanel(tab)}>
-          {['Jogar', 'Perfil', 'Loja'][index]}
+          {['Jogar', 'Draft histórico', 'Perfil', 'Loja'][index]}
         </button>)}
         <button className="quiet" disabled={busy} onClick={signOut}>Sair da conta</button>
       </nav>}
     </header>
     <section className="heading">
-      {!room && panel !== 'play' ? <h1>{panel === 'profile' ? 'Perfil' : 'Loja'}</h1> : <h1>{theme}<br /><em>{subtitle}</em></h1>}
+      {!room && panel !== 'play' ? <h1>{panel === 'history' ? 'Draft histórico' : panel === 'profile' ? 'Perfil' : 'Loja'}</h1> : <h1>{theme}<br /><em>{subtitle}</em></h1>}
     </section>
     {error && <p className="error" role="alert">{error}</p>}
     {!room && account === undefined ? <p>Carregando conta…</p> :
     !room && !account ? <AccountForm suggestedName={profile.name} busy={busy} submit={submitAccount} /> :
+    !room && account && panel === 'history' ? <HistoricalDraft request={historyApi} /> :
     !room && account && panel !== 'play' ? <ProfilePanel profile={profile} nickname={account.nickname} tab={panel} update={updateProfile} /> :
     !room ? <section className="panel lobby">
       <div className="mode-picker" role="group" aria-label="Modo de jogo">
