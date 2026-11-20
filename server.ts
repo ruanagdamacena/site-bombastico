@@ -158,12 +158,21 @@ createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       return res.end(JSON.stringify(data))
     }
-    if (req.method !== 'GET' || (url.pathname !== '/' && !/^\/assets\/[\w.-]+\.(js|css|webp)$/.test(url.pathname))) {
+    const isAsset = /^\/assets\/[\w.-]+\.(js|css|webp)$/.test(url.pathname)
+    const isPortrait = /^\/anime-portraits\/[a-z0-9-]+\.webp$/.test(url.pathname)
+    if (req.method !== 'GET' || (url.pathname !== '/' && !isAsset && !isPortrait)) {
       res.writeHead(404)
       return res.end()
     }
     const file = url.pathname === '/' ? '/index.html' : url.pathname
-    const content = await readFile(new URL('./dist' + file, import.meta.url))
+    const content = await readFile(new URL('./dist' + file, import.meta.url)).catch(error => {
+      if (isPortrait && error.code === 'ENOENT') return null
+      throw error
+    })
+    if (!content) {
+      res.writeHead(404)
+      return res.end()
+    }
     res.writeHead(200, { 'Content-Type': mime[file.slice(file.lastIndexOf('.'))] })
     res.end(content)
   } catch (error) {

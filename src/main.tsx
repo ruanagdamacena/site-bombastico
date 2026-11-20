@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
-import { animePortraits } from './anime-portraits'
+import { findAnimePortrait } from './anime-portraits'
 import './style.css'
 
 type Card = { name: string } & (
@@ -41,15 +41,23 @@ function cardContext(card: Card) {
 }
 
 function AnimePortrait({ card }: { card: Extract<Card, { universe: string }> }) {
-  const [failed, setFailed] = useState(false)
-  const portrait = animePortraits.find(({ name, universe, arc }) =>
-    name === card.name && universe === card.universe && arc === card.arc)
+  const [attempt, setAttempt] = useState(0)
+  const portrait = findAnimePortrait(card)
   if (!portrait) return null
+  const candidates = [portrait.local, portrait.image]
+  if (portrait.exact && portrait.general) candidates.push(portrait.general.local, portrait.general.image)
+  const image = candidates[attempt]
+  const general = !portrait.exact || attempt >= 2
+  const source = general ? portrait.general?.source ?? portrait.source : portrait.source
   return <figure className="anime-portrait">
-    {!failed && <img src={portrait.image} alt={card.name + ' em ' + card.universe}
-      width={260} height={160} referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
+    <div className="portrait-frame">
+      {image && <img key={image} src={image} alt={card.name + ' em ' + card.universe}
+        width={272} height={170} referrerPolicy="no-referrer"
+        onError={() => setAttempt(current => current + 1)} />}
+      {!image && <span>Imagem indisponível</span>}
+    </div>
     <figcaption>
-      <a href={portrait.source} target="_blank" rel="noreferrer">{failed ? 'Ver imagem na fonte' : 'Fonte da imagem'}</a>
+      <a href={source} target="_blank" rel="noreferrer">{!image ? 'Ver imagem na fonte' : general ? 'Retrato geral · Fonte' : 'Fonte da imagem'}</a>
     </figcaption>
   </figure>
 }

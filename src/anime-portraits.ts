@@ -18,7 +18,7 @@ const bleachPortraits = [
   source: bleachProfiles,
 }))
 
-export const animePortraits = [
+const phasePortraits = [
   {
     name: 'Shikamaru Nara', universe: 'Naruto', arc: 'Exame Chūnin',
     image: narutoImages + 'naruto01/001%EF%BD%9E100/064/C113.jpg',
@@ -51,3 +51,25 @@ export const animePortraits = [
   },
   ...bleachPortraits,
 ]
+import characterImages from './anime-character-images.json' with { type: 'json' }
+
+type PortraitCard = { name: string; universe: string; arc: string }
+
+
+export function findAnimePortrait(card: PortraitCard) {
+  const exact = phasePortraits.find(({ name, universe, arc }) =>
+    name === card.name && universe === card.universe && arc === card.arc)
+  const portraits: Record<string, { image: string; source: string }> = characterImages
+  const general = portraits[card.universe + '|' + card.name]
+  const portrait = exact ?? general
+  if (!portrait) return null
+
+  const local = (parts: string[]) => '/anime-portraits/' + parts.join('-')
+    .normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.webp'
+  const key = [card.universe, card.name]
+  return {
+    ...portrait, exact: Boolean(exact),
+    local: local(exact ? [...key, exact.arc] : key),
+    general: general && { ...general, local: local(key) },
+  }
+}

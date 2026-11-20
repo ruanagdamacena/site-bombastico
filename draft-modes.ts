@@ -9,7 +9,7 @@ export const modes = {
     title: 'Anime Character Draft',
     theme: 'Anime',
     subtitle: 'Character Draft',
-    attributes: ['Poder', 'Técnica', 'Velocidade', 'Defesa', 'Estratégia', 'Energia'],
+    attributes: ['Força', 'Técnica', 'Velocidade', 'Defesa', 'Estratégia', 'Energia'],
   },
 } as const
 
