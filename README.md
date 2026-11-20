@@ -27,3 +27,11 @@ Referências de personagens e fases: [Naruto — Exame Chūnin](https://naruto-o
 Referências das novas séries: [Demon Slayer](https://demonslayer-anime.com/hta/character/), [Jujutsu Kaisen](https://jujutsukaisen.jp/character/index_1st.php), [My Hero Academia](https://www.heroaca.com/character/chara_group01/) e [Hunter × Hunter](https://madhouse.co.jp/english/works/tv_hunter/).
 
 Partidas abertas antes da troca usam o catálogo com que começaram até a próxima revanche.
+
+### Imagens das cartas de anime
+
+O piloto usa retratos ilustrativos de cosplay de Shikamaru, Kakashi e Satoru Gojo. Após a revelação, a carta mostra o crédito, o arquivo de origem e a licença. Os arquivos locais foram redimensionados e convertidos para WebP, com as licenças das respectivas fotos.
+
+- Shikamaru — Narukyubi, [foto original](https://commons.wikimedia.org/wiki/File:Cosplay_de_Shikamaru_Nara.JPG) e [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- Kakashi — Juannando12, [foto original](https://commons.wikimedia.org/wiki/File:Kakashi_Hatake_Cosplay.jpg) e [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+- Satoru Gojo — Solomon203, [foto original](https://commons.wikimedia.org/wiki/File:Satoru_Goj%C5%8D_cosplay.jpg) e [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

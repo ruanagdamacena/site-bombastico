@@ -142,7 +142,9 @@ function handle(action: string, body: Record<string, unknown>) {
   return { room: view(room, seat) }
 }
 
-const mime: Record<string, string> = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html' }
+const mime: Record<string, string> = {
+  '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.webp': 'image/webp',
+}
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
   try {
@@ -156,7 +158,7 @@ createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       return res.end(JSON.stringify(data))
     }
-    if (req.method !== 'GET' || (url.pathname !== '/' && !/^\/assets\/[\w.-]+\.(js|css)$/.test(url.pathname))) {
+    if (req.method !== 'GET' || (url.pathname !== '/' && !/^\/assets\/[\w.-]+\.(js|css|webp)$/.test(url.pathname))) {
       res.writeHead(404)
       return res.end()
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
+import { animePortraits } from './anime-portraits'
 import './style.css'
 
 type Card = { name: string } & (
@@ -37,6 +38,20 @@ async function api(action: string, body: object) {
 
 function cardContext(card: Card) {
   return 'universe' in card ? [card.universe, card.arc] : [card.club, card.season].filter(Boolean)
+}
+
+function AnimePortrait({ card }: { card: Extract<Card, { universe: string }> }) {
+  const portrait = animePortraits.find(({ name, universe, arc }) =>
+    name === card.name && universe === card.universe && arc === card.arc)
+  if (!portrait) return null
+  return <figure className="anime-portrait">
+    <img src={portrait.image} alt={'Cosplay de ' + card.name} width={120} height={160} />
+    <figcaption>
+      <a href={portrait.source} target="_blank" rel="noreferrer">Cosplay · Foto de {portrait.credit}</a>
+      {' · '}
+      <a href={portrait.licenseUrl} target="_blank" rel="noreferrer">{portrait.license}</a>
+    </figcaption>
+  </figure>
 }
 
 function App() {
@@ -168,7 +183,10 @@ function App() {
             </div>
             {rolling ? <p className="draw-status">Sorteando…</p> : <div className="draw-details">
               <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
-              {'universe' in room.offer && <span className="tier">{room.offer.tier}</span>}
+              {'universe' in room.offer && <>
+                <span className="tier">{room.offer.tier}</span>
+                <AnimePortrait card={room.offer} />
+              </>}
             </div>}
           </div>}
         </>}
