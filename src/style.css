@@ -31,16 +31,49 @@ form { border-top: 1px solid #465444; padding-top: 14px; }
 form label { flex: 1 1 140px; }
 .offer { margin-bottom: 14px; }
 .offer h2 { font-size: clamp(1.5rem, 5vw, 3rem); }
-.draw-window { min-height: 78px; }
-[data-mode="anime"] .draw-window { min-height: 130px; }
-.draw-spinner { min-height: inherit; position: relative; display: grid; place-items: center; overflow: hidden; isolation: isolate; border-radius: 10px; }
-.draw-track { position: absolute; inset: 0 -384px 0 0; z-index: -2; opacity: .26; background: repeating-linear-gradient(90deg, var(--accent) 0 2px, transparent 2px 16px, var(--line, #465444) 16px 174px, transparent 174px 192px); animation: reel-turn .54s cubic-bezier(.1,.7,.3,1) both; }
-.draw-indicator { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--panel, #1b251b), transparent 42%, transparent 58%, var(--panel, #1b251b)); border-block: 2px solid var(--accent); }
-.draw-status { padding: 6px 14px; border-radius: 99px; background: var(--panel, #1b251b); color: var(--accent); font-weight: 700; }
-.draw-result { animation: reel-reveal .18s ease-out both; }
-@keyframes reel-turn { from { transform: translateX(0); } to { transform: translateX(-384px); } }
-@keyframes reel-reveal { from { transform: translateY(8px); opacity: .55; } to { transform: translateY(0); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .draw-track, .draw-result { animation: none; } }
+.draw-window { min-height: 112px; text-align: center; }
+[data-mode="anime"] .draw-window { min-height: 172px; }
+.draw-slot {
+  --slot-color: #83947d;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 32rem);
+  min-height: 66px;
+  margin-inline: auto;
+  padding: 8px 16px;
+  border: 2px solid var(--slot-color);
+  border-radius: 12px;
+  background: #111711;
+  color: var(--slot-color);
+}
+.draw-slot[data-state="rolling"][data-preview="1"] { --slot-color: #94cbf5; }
+.draw-slot[data-state="rolling"][data-preview="2"] { --slot-color: #cdb4ed; }
+.draw-slot[data-state="revealed"] { --slot-color: var(--accent); color: inherit; animation: draw-hit .46s ease-out; }
+.draw-slot[data-state="revealed"]::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid var(--accent);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: draw-ring .46s ease-out both;
+}
+.draw-slot .draw-name, .draw-slot h2 { margin: 0; font-size: clamp(1.15rem, 4.5vw, 2.1rem); line-height: 1.2; font-weight: 800; }
+.draw-status, .draw-details { margin: 10px 0 0; }
+.draw-status { color: var(--muted, #d5e4cd); }
+@keyframes draw-hit {
+  0% { background: color-mix(in srgb, var(--accent) 18%, #111711); box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 32%, transparent); }
+  100% { background: #111711; box-shadow: none; }
+}
+@keyframes draw-ring {
+  from { transform: scale(1); opacity: .7; }
+  to { transform: scale(1.07, 1.24); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw-slot[data-state="revealed"] { animation: none; }
+  .draw-slot[data-state="revealed"]::after { content: none; }
+}
 .card-context { color: var(--muted, #d5e4cd); margin-bottom: 6px; }
 .card-clue { margin-bottom: 8px; }
 .tier { color: var(--accent); }

@@ -13,6 +13,13 @@ type Room = {
   players: { name: string; picks: (number | null)[]; sources?: (Card | null)[] }[]
 }
 
+const previewNames: Record<Mode, readonly string[]> = {
+  football: ['Ronaldinho', 'Rodinei', 'Henry', 'Rony', 'Fábio Santos', 'Messi', 'Cássio', 'Nani', 'Zico'],
+  anime: ['Shikamaru Nara', 'Leorio', 'Satoru Gojo', 'Goku', 'Nami', 'Zenitsu Agatsuma', 'Komugi', 'Ichigo Kurosaki', 'Minoru Mineta'],
+}
+const drawTimings = [75, 155, 250, 365, 515, 710, 960]
+const quietDrawTimings = [320, 680]
+
 async function api(action: string, body: object) {
   const response = await fetch('/api/' + action, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -92,14 +99,23 @@ function App() {
   const myTurn = ready && !finished && room.step % 2 === room.seat
   const drawKey = ready && room.offer && !finished ? room.code + ':' + room.step : ''
   const [revealedDraw, setRevealedDraw] = useState('')
+  const [drawPreview, setDrawPreview] = useState({ key: '', index: 0 })
   const rolling = Boolean(drawKey && drawKey !== revealedDraw)
+  const previewIndex = drawPreview.key === drawKey ? drawPreview.index : 0
+  const candidates = previewNames[activeMode].filter(candidate => candidate !== room?.offer?.name)
+  const previewName = candidates[((room?.step ?? 0) * 3 + previewIndex) % candidates.length]
   useEffect(() => {
     if (!drawKey) {
       setRevealedDraw('')
       return
     }
-    const timer = window.setTimeout(() => setRevealedDraw(drawKey), 540)
-    return () => window.clearTimeout(timer)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const timings = reduced ? quietDrawTimings : drawTimings
+    const timers = timings.map((delay, index) => window.setTimeout(() => {
+      if (index === timings.length - 1) setRevealedDraw(drawKey)
+      else setDrawPreview({ key: drawKey, index: index + 1 })
+    }, delay))
+    return () => timers.forEach(timer => window.clearTimeout(timer))
   }, [drawKey])
   const scores = finished ? room.players.map(player =>
     player.picks.reduce<number>((total, value) => total + (value ?? 0), 0) / attributes.length) : []
@@ -140,20 +156,18 @@ function App() {
           <button disabled={busy} onClick={() => act('rematch')}>Jogar revanche</button>
         </> : <>
           <p>Rodada {Math.floor(room.step / 2) + 1} de {attributes.length} · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
-          <div className="draw-window" key={drawKey}>
-            {rolling ? <div className="draw-spinner">
-              <span className="draw-track" aria-hidden="true" />
-              <span className="draw-indicator" aria-hidden="true" />
-              <span className="draw-status">Sorteando…</span>
-            </div> : room.offer && <div className="draw-result">
-              <h2>{room.offer.name}</h2>
+          {room.offer && <div className="draw-window" key={drawKey}>
+            <div className="draw-slot" data-state={rolling ? 'rolling' : 'revealed'} data-preview={previewIndex % 3}>
+              {rolling ? <span className="draw-name" aria-hidden="true">{previewName}</span> : <h2>{room.offer.name}</h2>}
+            </div>
+            {rolling ? <p className="draw-status">Sorteando…</p> : <div className="draw-details">
               <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
               {'clue' in room.offer && <>
                 <p className="card-clue">{room.offer.clue}</p>
                 <span className="tier">{room.offer.tier}</span>
               </>}
             </div>}
-          </div>
+          </div>}
         </>}
       </section>
       <div className="boards">{room.players.map((player, seat) => <section className="panel" key={seat}>
