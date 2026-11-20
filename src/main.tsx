@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { modes, type Mode } from '../draft-modes'
 import './style.css'
 
-const attributes = ['Finalização', 'Passe', 'Drible', 'Velocidade', 'Defesa', 'Físico']
-type Card = { name: string; club: string; season: string; tier: string; fictional: boolean }
+type Card = { name: string; tier: string } & (
+  { club: string; season: string; fictional: boolean } |
+  { universe: string; arc: string; clue: string }
+)
 type Room = {
-  code: string; bot: boolean; seat: number; step: number
+  code: string; bot: boolean; mode: Mode; seat: number; step: number
   offer?: Card
   players: { name: string; picks: (number | null)[]; sources?: (Card | null)[] }[]
 }
@@ -19,8 +22,14 @@ async function api(action: string, body: object) {
   return data as { room: Room; token?: string }
 }
 
+function cardContext(card: Card) {
+  return 'universe' in card ? [card.universe, card.arc] : [card.club, card.season].filter(Boolean)
+}
+
 function App() {
   const [code, setCode] = useState(new URLSearchParams(location.search).get('sala') ?? '')
+  const [mode, setMode] = useState<Mode>(() =>
+    new URLSearchParams(location.search).get('modo') === 'anime' ? 'anime' : 'football')
   const [token, setToken] = useState(() => sessionStorage.getItem('draft:' + code) ?? '')
   const [name, setName] = useState('')
   const [room, setRoom] = useState<Room>()
@@ -53,7 +62,9 @@ function App() {
         sessionStorage.setItem('draft:' + next.room.code, next.token)
         setToken(next.token)
         setCode(next.room.code)
-        history.replaceState(null, '', '?sala=' + next.room.code)
+        const params = new URLSearchParams({ sala: next.room.code })
+        if (next.room.mode === 'anime') params.set('modo', 'anime')
+        history.replaceState(null, '', '?' + params)
       }
       setRoom(next.room)
     } catch (failure) {
@@ -64,32 +75,41 @@ function App() {
   }
 
   function leave() {
+    setMode(activeMode)
     setRoom(undefined)
     setCode('')
     setToken('')
     setCopied(false)
     setError('')
-    history.replaceState(null, '', '/')
+    history.replaceState(null, '', activeMode === 'anime' ? '/?modo=anime' : '/')
   }
 
+  const activeMode = room?.mode ?? mode
+  const { theme, subtitle, attributes } = modes[activeMode]
+  useEffect(() => { document.title = 'Bombástico — ' + modes[activeMode].title }, [activeMode])
   const ready = room?.players.length === 2
-  const finished = room?.step === 12
+  const finished = room?.step === 2 * attributes.length
   const myTurn = ready && !finished && room.step % 2 === room.seat
   const scores = finished ? room.players.map(player =>
     player.picks.reduce<number>((total, value) => total + (value ?? 0), 0) / attributes.length) : []
 
-  return <main>
+  return <main data-mode={activeMode}>
     <header><span>BOMBÁSTICO</span>{room && <button className="quiet" onClick={leave} disabled={busy}>Voltar ao início</button>}</header>
     <section className="heading">
-      <h1>Football<br /><em>Player Draft</em></h1>
+      <h1>{theme}<br /><em>{subtitle}</em></h1>
     </section>
     {error && <p className="error" role="alert">{error}</p>}
     {!room ? <section className="panel lobby">
-      <p>Escolha os atributos. Monte seu jogador. Vença no overall.</p>
+      <div className="mode-picker" role="group" aria-label="Modo de jogo">
+        {(['football', 'anime'] as const).map(option => <button
+          key={option} className={mode === option ? '' : 'quiet'} aria-pressed={mode === option} disabled={busy}
+          onClick={() => setMode(option)}>{option === 'anime' ? 'Anime' : 'Futebol'}</button>)}
+      </div>
+      <p>Escolha atributos para montar {mode === 'anime' ? 'seu personagem' : 'seu jogador'} e vencer no overall.</p>
       <label>Seu apelido<input value={name} maxLength={24} onChange={event => setName(event.target.value)} /></label>
       <div className="actions">
-        <button disabled={busy || !name.trim()} onClick={() => act('create', { bot: true })}>Jogar contra o bot</button>
-        <button className="quiet" disabled={busy || !name.trim()} onClick={() => act('create')}>Criar sala</button>
+        <button disabled={busy || !name.trim()} onClick={() => act('create', { mode, bot: true })}>Jogar contra o bot</button>
+        <button className="quiet" disabled={busy || !name.trim()} onClick={() => act('create', { mode })}>Criar sala</button>
       </div>
       <form onSubmit={event => { event.preventDefault(); void act('join') }}>
         <label>Código da sala<input value={code} maxLength={6} onChange={event => setCode(event.target.value.toUpperCase())} /></label>
@@ -108,10 +128,13 @@ function App() {
           <h2>{scores[0] === scores[1] ? 'Empate' : (scores[room.seat] > scores[1 - room.seat] ? 'Você venceu!' : 'Você perdeu')}</h2>
           <button disabled={busy} onClick={() => act('rematch')}>Jogar revanche</button>
         </> : <>
-          <p>Rodada {Math.floor(room.step / 2) + 1} de 6 · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
+          <p>Rodada {Math.floor(room.step / 2) + 1} de {attributes.length} · {myTurn ? 'Sua vez' : 'Vez de ' + room.players[room.step % 2].name}</p>
           <h2>{room.offer?.name}</h2>
-          {room.offer && <p className="card-season">{room.offer.club} · {room.offer.season}</p>}
-          <span className="tier">{room.offer?.tier}{room.offer?.fictional && ' · Atleta fictício'}</span>
+          {room.offer && <>
+            <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
+            {'clue' in room.offer && <p className="card-clue">{room.offer.clue}</p>}
+            <span className="tier">{room.offer.tier}{'fictional' in room.offer && room.offer.fictional && ' · Atleta fictício'}</span>
+          </>}
         </>}
       </section>
       <div className="boards">{room.players.map((player, seat) => <section className="panel" key={seat}>
@@ -122,7 +145,7 @@ function App() {
           return <button key={attribute} className="quiet"
             disabled={busy || !myTurn || seat !== room.seat || player.picks[index] !== null}
             onClick={() => act('pick', { attribute: index, step: room.step })}>
-            <span>{attribute}{source && <small>{source.name} · {source.club} · {source.season}</small>}</span>
+            <span>{attribute}{source && <small>{[source.name, ...cardContext(source)].join(' · ')}</small>}</span>
             <strong>{player.picks[index] ?? '—'}</strong>
           </button>
         })}</div>

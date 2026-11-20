@@ -1,6 +1,6 @@
 # Bombástico
 
-Protótipo do Football Player Draft com partidas contra bot ou por convite.
+Protótipo do Football Player Draft e do Anime Character Draft com partidas contra bot ou por convite.
 
 ## Rodar localmente
 
@@ -19,3 +19,5 @@ Abra http://localhost:3000. Para simular dois jogadores na mesma máquina, abra 
 O catálogo começa com 200 atletas e inclui cartas extras para algumas fases da carreira de Messi, Cristiano Ronaldo, Ronaldo, Ronaldinho e Kaká. Cada carta tem clube, temporada e notas próprias. Na mesma partida, os dois participantes podem receber o mesmo atleta em temporadas diferentes. A faixa depende da média das notas da carta. Ruins vão até 69, médios de 70 a 79, bons de 80 a 89 e lendas de 90 a 99.
 
 O catálogo ainda inclui atletas e clubes fictícios, identificados nas cartas. Todas as notas são provisórias e foram definidas para testar o jogo.
+
+No modo anime, são 48 personagens originais em quatro universos. Cada carta mostra a fase da história e uma pista de estilo. As notas de poder, técnica, velocidade, defesa, estratégia e energia aparecem após a escolha, como no futebol.

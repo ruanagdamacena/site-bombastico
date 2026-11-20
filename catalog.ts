@@ -1,4 +1,6 @@
-export const attributes = ['Finalização', 'Passe', 'Drible', 'Velocidade', 'Defesa', 'Físico'] as const
+import { modes } from './draft-modes.ts'
+
+const attributes = modes.football.attributes
 export const tiers = ['Ruins', 'Médios', 'Bons', 'Lendas'] as const
 
 // Keep these rows in their original order: existing rooms store numeric card IDs.
