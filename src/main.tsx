@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
 import './style.css'
 
-type Card = { name: string; tier: string } & (
-  { club: string; season: string; fictional: boolean } |
-  { universe: string; arc: string; clue: string }
+type Card = { name: string } & (
+  { club: string; season: string } |
+  { universe: string; arc: string; clue: string; tier: string }
 )
 type Room = {
   code: string; bot: boolean; mode: Mode; seat: number; step: number
@@ -132,8 +132,10 @@ function App() {
           <h2>{room.offer?.name}</h2>
           {room.offer && <>
             <p className="card-context">{cardContext(room.offer).join(' · ')}</p>
-            {'clue' in room.offer && <p className="card-clue">{room.offer.clue}</p>}
-            <span className="tier">{room.offer.tier}{'fictional' in room.offer && room.offer.fictional && ' · Atleta fictício'}</span>
+            {'clue' in room.offer && <>
+              <p className="card-clue">{room.offer.clue}</p>
+              <span className="tier">{room.offer.tier}</span>
+            </>}
           </>}
         </>}
       </section>

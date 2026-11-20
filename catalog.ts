@@ -1,7 +1,6 @@
 import { modes } from './draft-modes.ts'
 
 const attributes = modes.football.attributes
-export const tiers = ['Ruins', 'Médios', 'Bons', 'Lendas'] as const
 
 // Keep these rows in their original order: existing rooms store numeric card IDs.
 const good = `Adriano|Inter de Milão|2005/06

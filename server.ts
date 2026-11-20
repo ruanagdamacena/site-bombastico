@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { randomBytes, randomInt, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { DatabaseSync } from 'node:sqlite'
-import { baseCatalog, catalog, tiers, type Card } from './catalog.ts'
+import { baseCatalog, catalog, type Card } from './catalog.ts'
 import { animeCatalog, animeTiers, type AnimeCard } from './anime-catalog.ts'
 import { modes, type Mode } from './draft-modes.ts'
 
@@ -45,8 +45,8 @@ function publicCard(card: DraftCard) {
     const { name, universe, arc, clue, tier } = card
     return { name, universe, arc, clue, tier: animeTiers[tier] }
   }
-  const { name, club, season, tier, fictional } = card
-  return { name, club, season, tier: tiers[tier], fictional }
+  const { name, club, season } = card
+  return { name, club, season }
 }
 
 function pick(player: Player, index: number, card: DraftCard) {
