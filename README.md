@@ -30,8 +30,6 @@ Partidas abertas antes da troca usam o catálogo com que começaram até a próx
 
 ### Imagens das cartas de anime
 
-O piloto usa retratos ilustrativos de cosplay de Shikamaru, Kakashi e Satoru Gojo. Após a revelação, a carta mostra o crédito, o arquivo de origem e a licença. Os arquivos locais foram redimensionados e convertidos para WebP, com as licenças das respectivas fotos.
+O protótipo local referencia imagens oficiais de 15 cartas após a revelação e oferece um link para a fonte. Os arquivos carregam dos sites de origem. As permissões para o uso das artes em um lançamento público ainda precisam ser confirmadas.
 
-- Shikamaru — Narukyubi, [foto original](https://commons.wikimedia.org/wiki/File:Cosplay_de_Shikamaru_Nara.JPG) e [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
-- Kakashi — Juannando12, [foto original](https://commons.wikimedia.org/wiki/File:Kakashi_Hatake_Cosplay.jpg) e [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
-- Satoru Gojo — Solomon203, [foto original](https://commons.wikimedia.org/wiki/File:Satoru_Goj%C5%8D_cosplay.jpg) e [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Fontes das imagens: [Naruto — Shikamaru](https://naruto-official.com/en/anime/naruto1/list/01_288), [Naruto Shippuden — Kakashi](https://naruto-official.com/en/anime/naruto2/list/01_819), [Crunchyroll — Gojo](https://www.crunchyroll.com/news/announcements/2023/6/30/jujutsu-kaisen-season-2-anime-premieres-on-crunchyroll-july-6), [Demon Slayer — Distrito do Entretenimento](https://demonslayer-anime.com/eda/character/), [Demon Slayer — Trem Infinito](https://demonslayer-anime.com/mugentrain/character/) e [Bleach](https://bleach-anime.com/en/character/).

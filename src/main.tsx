@@ -41,15 +41,15 @@ function cardContext(card: Card) {
 }
 
 function AnimePortrait({ card }: { card: Extract<Card, { universe: string }> }) {
+  const [failed, setFailed] = useState(false)
   const portrait = animePortraits.find(({ name, universe, arc }) =>
     name === card.name && universe === card.universe && arc === card.arc)
   if (!portrait) return null
   return <figure className="anime-portrait">
-    <img src={portrait.image} alt={'Cosplay de ' + card.name} width={120} height={160} />
+    {!failed && <img src={portrait.image} alt={card.name + ' em ' + card.universe}
+      width={260} height={160} referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
     <figcaption>
-      <a href={portrait.source} target="_blank" rel="noreferrer">Cosplay · Foto de {portrait.credit}</a>
-      {' · '}
-      <a href={portrait.licenseUrl} target="_blank" rel="noreferrer">{portrait.license}</a>
+      <a href={portrait.source} target="_blank" rel="noreferrer">{failed ? 'Ver imagem na fonte' : 'Fonte da imagem'}</a>
     </figcaption>
   </figure>
 }
