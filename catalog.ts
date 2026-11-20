@@ -165,7 +165,7 @@ const alternateSeasons: [athleteId: number, club: string, season: string, rating
   [199, 'Real Madrid', '2009/10', [84, 89, 87, 83, 68, 82]],
 ]
 
-export const catalog = [
+export const seasonCatalog = [
   ...baseCatalog.map(card => {
     const ratings = tunedBaseRatings[card.id]
     return ratings ? makeCard({ ...card, ratings }) : card
@@ -173,3 +173,27 @@ export const catalog = [
   ...alternateSeasons.map(([athleteId, club, season, ratings], index) =>
     makeCard({ ...baseCatalog[athleteId], id: baseCatalog.length + index, club, season, ratings })),
 ]
+
+const leagueSquads = [
+  [
+    ['Chapecoense', '2019', 'Eduardo|Bruno Pacheco|Márcio Araújo|Arthur Gomes|Renato Kayzer|Amaral|Everaldo Stum|Camilo|Gum|Diego Torres'],
+    ['Fortaleza', '2019', 'Tinga|Juan Quintero|Carlinhos|Wellington Paulista|Osvaldo|Matheus Vargas|Gabriel Dias|Romarinho|Bruno Melo|Edinho'],
+    ['Burnley', '2023/24', 'Zeki Amdouni|Lorenz Assignon|Manuel Benson|Jordan Beyer|Jack Cork|Josh Cullen|Hannes Delcroix|Hjalmar Ekdal|Lyle Foster|Dara O’Shea'],
+    ['Sheffield United', '2023/24', 'Cameron Archer|George Baldock|Anis Ben Slimane|Jayden Bogle|Ben Brereton Díaz|Rhian Brewster|Vinicius Souza|John Egan|Mason Holgate|Auston Trusty'],
+    ['Luton Town', '2023/24', 'Alfie Doughty|Chiedozie Ogbene|Carlton Morris|Elijah Adebayo|Andros Townsend|Pelly Ruddock Mpanzu|Tom Lockyer|Amari’i Bell|Tahith Chong|Jordan Clark'],
+  ],
+  [
+    ['Corinthians', '2019', 'Vágner Love|Júnior Urso|Júnior Sornoza|Fagner|Clayson|Gil|Pedrinho|Ramiro|Carlos Augusto|Mauro Boselli'],
+    ['Flamengo', '2019', 'Rafinha|Rodrigo Caio|Pablo Marí|Willian Arão|Gerson|Rodinei|Renê|Reinier|Vitinho|Robert Piris da Motta'],
+    ['Grêmio', '2019', 'Pedro Geromel|Walter Kannemann|Bruno Cortez|Matheus Henrique|Maicon Souza|Alisson Castro|Everton Cebolinha|Pepê Aquino|Diego Tardelli|Thaciano'],
+    ['Everton', '2023/24', 'James Tarkowski|Jarrad Branthwaite|Dwight McNeil|Dominic Calvert-Lewin|Abdoulaye Doucouré|James Garner|Amadou Onana|Vitaliy Mykolenko|Séamus Coleman|Beto'],
+    ['Nottingham Forest', '2023/24', 'Ola Aina|Taiwo Awoniyi|Willy Boly|Morgan Gibbs-White|Callum Hudson-Odoi|Gonzalo Montiel|Ibrahim Sangaré|Neco Williams|Chris Wood|Ryan Yates'],
+  ],
+]
+
+const registeredPlayers = leagueSquads.flatMap((clubs, tier) =>
+  clubs.flatMap(([club, season, names]) => names.split('|').map(name => ({ club, season, name })))
+    .map((player, index) => makeCard({ ...baseCatalog[tier * 50 + index], ...player, fictional: false })),
+)
+
+export const catalog = [...registeredPlayers, ...seasonCatalog.slice(registeredPlayers.length)]
