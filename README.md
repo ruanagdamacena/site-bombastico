@@ -30,7 +30,9 @@ Partidas abertas antes da troca usam o catálogo com que começaram até a próx
 
 ## Perfil e cosméticos
 
-O perfil guarda apelido, conquistas e cosméticos no navegador. Cada partida concluída rende 20 moedas, com 10 a mais por vitória. As moedas desbloqueiam banners, títulos e emblemas na loja do jogo. Este protótipo usa progresso local por navegador, sem conta ou pagamentos.
+O apelido é escolhido no cadastro e usado na entrada da conta e nas partidas. As contas ficam no banco local do servidor. O progresso e os cosméticos ficam vinculados à conta neste navegador. Ao criar uma conta neste navegador, o progresso local anterior é transferido para ela.
+
+Cada partida concluída rende 20 moedas e 100 XP, com mais 10 moedas e 50 XP por vitória. As moedas compram banners e emblemas. A cada 100 XP o jogador sobe um nível, e a cada 10 níveis ganha um título. Títulos comprados na versão anterior continuam disponíveis no perfil.
 
 ### Imagens das cartas de anime
 

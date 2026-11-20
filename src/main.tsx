@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { modes, type Mode } from '../draft-modes'
 import { findAnimePortrait } from './anime-portraits'
-import { awardMatch, loadProfile, matchCoins, profileMedals, ProfilePanel, saveProfile, type Profile } from './profile'
+import { attachLocalProfile, awardMatch, earnedTitles, loadProfile, matchCoins, matchXp, profileLevel, profileMedals, ProfilePanel, saveProfile, type Profile } from './profile'
 import './style.css'
 
 type Card = { name: string } & (
@@ -14,6 +14,7 @@ type Room = {
   offer?: Card
   players: { name: string; picks: (number | null)[]; sources?: (Card | null)[] }[]
 }
+type Account = { id: string; nickname: string }
 
 const previewNames: Record<Mode, readonly string[]> = {
   football: [
@@ -28,14 +29,16 @@ const previewNames: Record<Mode, readonly string[]> = {
 const drawTimings = [36, 74, 114, 157, 203, 253, 308, 370, 441, 526, 640]
 const quietDrawTimings = [95, 197, 310, 435, 570]
 
-async function api(action: string, body: object) {
+async function post<T>(action: string, body: object): Promise<T> {
   const response = await fetch('/api/' + action, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   })
   const data = await response.json()
   if (!response.ok) throw new Error(data.error)
-  return data as { room: Room; token?: string }
+  return data as T
 }
+const api = (action: string, body: object) => post<{ room: Room; token?: string }>(action, body)
+const accountApi = (action: string, body: object = {}) => post<{ account: Account | null }>('account/' + action, body)
 
 function cardContext(card: Card) {
   return 'universe' in card ? [card.universe, card.arc] : [card.club, card.season].filter(Boolean)
@@ -63,14 +66,45 @@ function AnimePortrait({ card }: { card: Extract<Card, { universe: string }> }) 
   </figure>
 }
 
+function AccountForm({ suggestedName, busy, submit }: {
+  suggestedName: string
+  busy: boolean
+  submit: (action: 'register' | 'login', nickname: string, password: string) => Promise<boolean>
+}) {
+  const [registering, setRegistering] = useState(true)
+  const [nickname, setNickname] = useState(suggestedName)
+  const [password, setPassword] = useState('')
+
+  return <section className="panel lobby account-form">
+    <h2>{registering ? 'Crie sua conta' : 'Entre na sua conta'}</h2>
+    <form onSubmit={async event => {
+      event.preventDefault()
+      if (await submit(registering ? 'register' : 'login', nickname, password)) setPassword('')
+    }}>
+      <label>Apelido<input autoComplete="username" required minLength={3} maxLength={24}
+        value={nickname} onChange={event => setNickname(event.target.value)} /></label>
+      <label>Senha<input type="password" autoComplete={registering ? 'new-password' : 'current-password'}
+        minLength={8} maxLength={128} required value={password}
+        onChange={event => setPassword(event.target.value)} /></label>
+      <div className="actions">
+        <button disabled={busy}>{registering ? 'Criar conta' : 'Entrar'}</button>
+        <button type="button" className="quiet" disabled={busy} onClick={() => {
+          setRegistering(!registering)
+          setPassword('')
+        }}>{registering ? 'Já tenho conta' : 'Criar uma conta'}</button>
+      </div>
+    </form>
+  </section>
+}
+
 function App() {
   const [code, setCode] = useState(new URLSearchParams(location.search).get('sala') ?? '')
   const [mode, setMode] = useState<Mode>(() =>
     new URLSearchParams(location.search).get('modo') === 'anime' ? 'anime' : 'football')
   const [token, setToken] = useState(() => sessionStorage.getItem('draft:' + code) ?? '')
   const [profile, setProfile] = useState(loadProfile)
+  const [account, setAccount] = useState<Account | null>()
   const [panel, setPanel] = useState<'play' | 'profile' | 'shop'>('play')
-  const [name, setName] = useState(profile.name)
   const [room, setRoom] = useState<Room>()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -78,14 +112,53 @@ function App() {
   const [scoreBeat, setScoreBeat] = useState<{ attribute: string; score: number }>()
 
   function updateProfile(change: (current: Profile) => Profile) {
-    setProfile(saveProfile(change))
+    setProfile(saveProfile(change, account?.id))
   }
 
   useEffect(() => {
-    const sync = () => setProfile(loadProfile())
+    let active = true
+    void accountApi('current').then(({ account }) => {
+      if (!active) return
+      setAccount(account)
+      setProfile(loadProfile(account?.id))
+    }).catch(() => { if (active) setAccount(null) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const sync = () => setProfile(loadProfile(account?.id))
     window.addEventListener('storage', sync)
     return () => window.removeEventListener('storage', sync)
-  }, [])
+  }, [account?.id])
+
+  async function submitAccount(action: 'register' | 'login', nickname: string, password: string) {
+    setBusy(true)
+    setError('')
+    try {
+      const { account } = await accountApi(action, { nickname, password })
+      if (!account) return false
+      if (action === 'register') attachLocalProfile(account.id)
+      setAccount(account)
+      setProfile(loadProfile(account.id))
+      return true
+    } catch (failure) {
+      setError((failure as Error).message)
+      return false
+    } finally { setBusy(false) }
+  }
+
+  async function signOut() {
+    setBusy(true)
+    setError('')
+    try {
+      await accountApi('logout')
+      setAccount(null)
+      setProfile(loadProfile())
+      leave()
+    } catch (failure) {
+      setError((failure as Error).message)
+    } finally { setBusy(false) }
+  }
 
   useEffect(() => {
     if (!scoreBeat) return
@@ -113,9 +186,8 @@ function App() {
     setBusy(true)
     setError('')
     try {
-      const next = await api(action, { name, code, token, ...details })
+      const next = await api(action, { code, token, ...details })
       if (next.token) {
-        updateProfile(current => ({ ...current, name: next.room.players[next.room.seat].name }))
         sessionStorage.setItem('draft:' + next.room.code, next.token)
         setToken(next.token)
         setCode(next.room.code)
@@ -179,33 +251,40 @@ function App() {
   const won = Boolean(finished && scores[room.seat] > scores[1 - room.seat])
   const completedMatch = finished ? room.code + ':' + (room.match ?? 1) : ''
   const best = finished ? Math.max(...room.players[room.seat].picks.map(score => score ?? 0)) : 0
-  const previousMedals = finished ? profileMedals({
+  const beforeMatch = finished ? {
     ...profile, results: Object.fromEntries(Object.entries(profile.results).filter(([key]) => key !== completedMatch)),
-  }) : []
+  } : profile
+  const previousMedals = finished ? profileMedals(beforeMatch) : []
   const earnedMedals = finished ? profileMedals(profile).filter((medal, index) =>
     medal.unlocked && !previousMedals[index].unlocked) : []
+  const priorTitles = finished ? earnedTitles(beforeMatch) : []
+  const newTitles = finished ? earnedTitles(profile).filter(title => !priorTitles.some(item => item.id === title.id)) : []
+  const levelUp = finished && profileLevel(profile).level > profileLevel(beforeMatch).level
   const rarity = !rolling && room?.offer && 'tier' in room.offer &&
     (room.offer.tier === 'Lendas' ? 'legend' : room.offer.tier === 'Elites' ? 'elite' : undefined)
   useEffect(() => {
-    if (!completedMatch) return
-    setProfile(saveProfile(current => awardMatch(current, completedMatch, { mode: activeMode, won, best })))
-  }, [completedMatch, activeMode, won, best])
+    if (!completedMatch || account === undefined) return
+    setProfile(saveProfile(current => awardMatch(current, completedMatch, { mode: activeMode, won, best }), account?.id))
+  }, [completedMatch, account, activeMode, won, best])
 
   return <main data-mode={activeMode}>
     <header><span>BOMBÁSTICO</span>{room ? <button className="quiet" onClick={leave} disabled={busy}>Voltar ao início</button> :
-      <nav className="main-nav" aria-label="Menu principal">
+      account && <nav className="main-nav" aria-label="Menu principal">
         {(['play', 'profile', 'shop'] as const).map((tab, index) => <button key={tab}
           className={panel === tab ? '' : 'quiet'} aria-pressed={panel === tab}
-          onClick={() => { if (tab === 'play' && panel !== 'play') setName(profile.name); setPanel(tab) }}>
+          onClick={() => setPanel(tab)}>
           {['Jogar', 'Perfil', 'Loja'][index]}
         </button>)}
+        <button className="quiet" disabled={busy} onClick={signOut}>Sair da conta</button>
       </nav>}
     </header>
     <section className="heading">
       {!room && panel !== 'play' ? <h1>{panel === 'profile' ? 'Perfil' : 'Loja'}</h1> : <h1>{theme}<br /><em>{subtitle}</em></h1>}
     </section>
     {error && <p className="error" role="alert">{error}</p>}
-    {!room && panel !== 'play' ? <ProfilePanel profile={profile} tab={panel} update={updateProfile} /> :
+    {!room && account === undefined ? <p>Carregando conta…</p> :
+    !room && !account ? <AccountForm suggestedName={profile.name} busy={busy} submit={submitAccount} /> :
+    !room && account && panel !== 'play' ? <ProfilePanel profile={profile} nickname={account.nickname} tab={panel} update={updateProfile} /> :
     !room ? <section className="panel lobby">
       <div className="mode-picker" role="group" aria-label="Modo de jogo">
         {(['football', 'anime'] as const).map(option => <button
@@ -213,14 +292,14 @@ function App() {
           onClick={() => setMode(option)}>{option === 'anime' ? 'Anime' : 'Futebol'}</button>)}
       </div>
       <p>Escolha atributos para montar {mode === 'anime' ? 'seu personagem' : 'seu jogador'} e vencer no overall.</p>
-      <label>Seu apelido<input value={name} maxLength={24} onChange={event => setName(event.target.value)} /></label>
+      <p>Jogando como <strong>{account?.nickname}</strong></p>
       <div className="actions">
-        <button disabled={busy || !name.trim()} onClick={() => act('create', { mode, bot: true })}>Jogar contra o bot</button>
-        <button className="quiet" disabled={busy || !name.trim()} onClick={() => act('create', { mode })}>Criar sala</button>
+        <button disabled={busy} onClick={() => act('create', { mode, bot: true })}>Jogar contra o bot</button>
+        <button className="quiet" disabled={busy} onClick={() => act('create', { mode })}>Criar sala</button>
       </div>
       <form onSubmit={event => { event.preventDefault(); void act('join') }}>
         <label>Código da sala<input value={code} maxLength={6} onChange={event => setCode(event.target.value.toUpperCase())} /></label>
-        <button className="quiet" disabled={busy || !name.trim() || code.length !== 6}>Entrar</button>
+        <button className="quiet" disabled={busy || code.length !== 6}>Entrar</button>
       </form>
     </section> : <>
       <div className="matchbar">
@@ -240,7 +319,9 @@ function App() {
             <small>{room.players[seat].name}</small>
             <strong>{scores[seat].toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</strong>
           </div>)}</div>
-          <p>+{matchCoins(won)} moedas</p>
+          <p>+{matchCoins(won)} moedas · +{matchXp(won)} XP</p>
+          {levelUp && <p>Você chegou ao nível {profileLevel(profile).level}!</p>}
+          {newTitles.map(title => <p key={title.id}>Título desbloqueado · {title.name}</p>)}
           {earnedMedals.length > 0 && <ul className="result-medals">
             {earnedMedals.map(medal => <li key={medal.name}>Conquista · {medal.name}</li>)}
           </ul>}

@@ -5,9 +5,10 @@ import { DatabaseSync } from 'node:sqlite'
 import { baseCatalog, catalog, registeredCatalog, seasonCatalog, type Card } from './catalog.ts'
 import { animeCatalog, animeTiers, expandedAnimeCatalog, legacyAnimeCatalog, type AnimeCard } from './anime-catalog.ts'
 import { modes, type Mode } from './draft-modes.ts'
+import { accounts } from './accounts.ts'
 
 type DraftCard = Card | AnimeCard
-type Player = { name: string; token: string; picks: (number | null)[]; sources?: (number | null)[] }
+type Player = { name: string; token: string; picks: (number | null)[]; sources?: (number | null)[]; accountId?: string }
 type Room = {
   code: string
   bot: boolean
@@ -19,11 +20,12 @@ type Room = {
   match?: number
 }
 const db = new DatabaseSync(process.env.DRAFT_DATABASE ?? 'draft.sqlite')
+const accountStore = accounts(db)
 db.exec('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL)')
 const read = db.prepare('SELECT state FROM rooms WHERE code = ?')
 const save = db.prepare('INSERT INTO rooms VALUES (?, ?) ON CONFLICT(code) DO UPDATE SET state = excluded.state')
-const makePlayer = (name: string, mode: Mode, token = randomUUID()): Player =>
-  ({ name, token, picks: modes[mode].attributes.map(() => null) })
+const makePlayer = (name: string, mode: Mode, token = randomUUID(), accountId?: string): Player =>
+  ({ name, token, accountId, picks: modes[mode].attributes.map(() => null) })
 const turn = (room: Room) => room.players.flatMap(player => player.picks).filter(pick => pick !== null).length
 
 function deal(mode: Mode) {
@@ -84,16 +86,15 @@ function view(room: Room, seat: number) {
   }
 }
 
-function handle(action: string, body: Record<string, unknown>) {
-  const name = typeof body.name === 'string' ? body.name.trim().slice(0, 24) : ''
+function handle(action: string, body: Record<string, unknown>, account: { id: string; nickname: string } | null) {
   if (action === 'create') {
-    if (!name) throw new Error('Digite seu apelido.')
+    if (!account) throw new Error('Entre na sua conta para criar uma sala.')
     const mode = body.mode ?? 'football'
     if (mode !== 'football' && mode !== 'anime') throw new Error('Modo desconhecido.')
     let code: string
     do { code = randomBytes(3).toString('hex').toUpperCase() } while (read.get(code))
     const bot = body.bot === true
-    const players = [makePlayer(name, mode)]
+    const players = [makePlayer(account.nickname, mode, undefined, account.id)]
     if (bot) players.push(makePlayer('Bot', mode))
     const room: Room = { code, bot, mode, players, offers: deal(mode), catalogVersion: 3 }
     save.run(code, JSON.stringify(room))
@@ -104,11 +105,14 @@ function handle(action: string, body: Record<string, unknown>) {
   if (!row) throw new Error('Sala não encontrada.')
   const room = JSON.parse(String(row.state)) as Room
   const mode = room.mode ?? 'football'
-  let seat = room.players.findIndex(player => player.token === body.token)
+  let seat = room.players.findIndex(player => player.token === body.token &&
+    (!player.accountId || player.accountId === account?.id))
   if (action === 'join' && seat < 0) {
-    if (!name) throw new Error('Digite seu apelido.')
+    if (!account) throw new Error('Entre na sua conta para jogar.')
+    seat = room.players.findIndex(player => player.accountId === account.id)
+    if (seat >= 0) return { token: room.players[seat].token, room: view(room, seat) }
     if (room.players.length === 2) throw new Error('Esta sala já está cheia.')
-    seat = room.players.push(makePlayer(name, mode)) - 1
+    seat = room.players.push(makePlayer(account.nickname, mode, undefined, account.id)) - 1
     save.run(code, JSON.stringify(room))
     return { token: room.players[seat].token, room: view(room, seat) }
   }
@@ -131,7 +135,7 @@ function handle(action: string, body: Record<string, unknown>) {
     save.run(code, JSON.stringify(room))
   } else if (action === 'rematch') {
     if (turn(room) !== room.offers.length) throw new Error('A partida ainda está em andamento.')
-    room.players = room.players.map(({ name, token }) => makePlayer(name, mode, token))
+    room.players = room.players.map(({ name, token, accountId }) => makePlayer(name, mode, token, accountId))
     room.catalogVersion = 3
     room.offers = deal(mode)
     room.match = (room.match ?? 1) + 1
@@ -156,7 +160,14 @@ createServer(async (req, res) => {
         raw += chunk
         if (raw.length > 4096) throw new Error('Pedido muito grande.')
       }
-      const data = handle(url.pathname.slice(5), JSON.parse(raw))
+      const action = url.pathname.slice(5)
+      if (action.startsWith('account/') && !req.headers['content-type']?.startsWith('application/json')) {
+        throw new Error('Formato de pedido inválido.')
+      }
+      const body = JSON.parse(raw)
+      const data = action.startsWith('account/')
+        ? await accountStore.handle(action.slice(8), req, res, body)
+        : handle(action, body, accountStore.current(req))
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       return res.end(JSON.stringify(data))
     }

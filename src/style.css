@@ -22,6 +22,8 @@ p { margin: 0 0 16px; }
 label { display: grid; gap: 5px; }
 input, button { font: inherit; border-radius: 8px; padding: 9px 13px; }
 input { width: 100%; min-width: 0; border: 1px solid #698367; background: #111711; color: inherit; }
+.account-form form { display: grid; gap: 10px; }
+.account-form .actions { margin-top: 2px; }
 button { border: 1px solid transparent; background: var(--accent); color: #18210e; cursor: pointer; font-weight: 700; }
 button:disabled { opacity: .55; cursor: default; }
 .quiet { border-color: var(--outline, #698367); background: transparent; color: inherit; }
@@ -116,6 +118,7 @@ form label { flex: 1 1 140px; }
 .profile-wallet { margin-left: auto; padding: 6px 10px; border-radius: 8px; background: #171524; }
 .profile-stats { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 22px; }
 .profile-stats label { flex: 1 1 220px; }
+.profile-stats progress { flex-basis: 100%; width: 100%; height: 12px; accent-color: var(--accent); }
 .medal-list, .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 10px; }
 .medal-list { list-style: none; margin: 0; padding: 0; }
 .medal-list li, .shop-item { display: grid; gap: 7px; }
