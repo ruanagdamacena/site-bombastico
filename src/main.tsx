@@ -14,11 +14,17 @@ type Room = {
 }
 
 const previewNames: Record<Mode, readonly string[]> = {
-  football: ['Ronaldinho', 'Rodinei', 'Henry', 'Rony', 'Fábio Santos', 'Messi', 'Cássio', 'Nani', 'Zico'],
-  anime: ['Shikamaru Nara', 'Leorio', 'Satoru Gojo', 'Goku', 'Nami', 'Zenitsu Agatsuma', 'Komugi', 'Ichigo Kurosaki', 'Minoru Mineta'],
+  football: [
+    'Ronaldinho', 'Rodinei', 'Henry', 'Rony', 'Fábio Santos', 'Messi', 'Cássio',
+    'Nani', 'Zico', 'Neymar', 'Isco', 'Arrascaeta', 'Rogério Ceni', 'Adriano',
+  ],
+  anime: [
+    'Shikamaru Nara', 'Leorio', 'Satoru Gojo', 'Goku', 'Nami', 'Zenitsu Agatsuma', 'Komugi',
+    'Ichigo Kurosaki', 'Minoru Mineta', 'Gaara', 'Tanjiro Kamado', 'Kurapika', 'Bulma', 'Roronoa Zoro',
+  ],
 }
-const drawTimings = [75, 155, 250, 365, 515, 710, 960]
-const quietDrawTimings = [320, 680]
+const drawTimings = [36, 74, 114, 157, 203, 253, 308, 370, 441, 526, 640]
+const quietDrawTimings = [95, 197, 310, 435, 570]
 
 async function api(action: string, body: object) {
   const response = await fetch('/api/' + action, {
