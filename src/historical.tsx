@@ -4,7 +4,7 @@ import type { HistoricalView } from '../historical-draft'
 
 const options: { id: Competition; name: string; teams: string }[] = [
   { id: 'libertadores-2019', name: 'Libertadores 2019', teams: 'Flamengo, Grêmio, River Plate e Boca Juniors' },
-  { id: 'copa-2002', name: 'Seleções históricas', teams: 'Elencos de diferentes Copas · adversários de 2002' },
+  { id: 'copa-2002', name: 'Seleções históricas', teams: '537 elencos · Todas as Copas de 1930 a 2026' },
 ]
 const lines: Position[] = ['ATA', 'MEI', 'DEF', 'GOL']
 const positionLabels = { GOL: 'Goleiro', DEF: 'Defesa', MEI: 'Meio-campo', ATA: 'Ataque' } as const
@@ -19,10 +19,11 @@ function HistoricalCampaign({ competition, request }: { competition: Competition
   const [busy, setBusy] = useState(false)
   const [candidate, setCandidate] = useState<string>()
   const [moving, setMoving] = useState<number>()
+  const [showOvr, setShowOvr] = useState(() => localStorage.getItem('bombastico:history-ovr') === '1')
 
   useEffect(() => {
     let active = true
-    request('state', { competition }).then(({ run }) => {
+    request('state', { competition, showOvr: localStorage.getItem('bombastico:history-ovr') === '1' }).then(({ run }) => {
       if (!active) return
       setRun(run)
       if (run) setFormation(run.formation)
@@ -36,10 +37,23 @@ function HistoricalCampaign({ competition, request }: { competition: Competition
     setBusy(true)
     setError('')
     try {
-      const next = await request(action, { competition, revision: run?.revision, ...body })
+      const next = await request(action, { competition, revision: run?.revision, showOvr, ...body })
       setRun(next.run)
       setCandidate(undefined)
       setMoving(undefined)
+    } catch (failure) {
+      setError((failure as Error).message)
+    } finally { setBusy(false) }
+  }
+
+  async function toggleOvr(visible: boolean) {
+    setBusy(true)
+    setError('')
+    try {
+      const next = await request('state', { competition, showOvr: visible })
+      localStorage.setItem('bombastico:history-ovr', visible ? '1' : '0')
+      setShowOvr(visible)
+      setRun(next.run)
     } catch (failure) {
       setError((failure as Error).message)
     } finally { setBusy(false) }
@@ -68,6 +82,11 @@ function HistoricalCampaign({ competition, request }: { competition: Competition
 
   return <>
     {error && <p className="error" role="alert">{error}</p>}
+    <label className="history-ovr">
+      <input type="checkbox" checked={showOvr} disabled={busy || run === undefined}
+        onChange={event => { void toggleOvr(event.target.checked) }} />
+      Mostrar overall (OVR)
+    </label>
     {run === undefined ? <p>Carregando campanha…</p> : !run ? <section className="panel history-start">
       <h2>Monte o seu XI</h2>
       <p>Sorteie um elenco, escolha um jogador e encaixe-o no campo. Repita até completar os 11.</p>
@@ -89,7 +108,8 @@ function HistoricalCampaign({ competition, request }: { competition: Competition
                   data-active={target || moving === index} data-picked={Boolean(card)}
                   aria-label={label + ' · ' + (card?.name ?? 'vaga livre')}
                   disabled={busy || !canArrange || !enabled} onClick={() => pickFieldSlot(index)}>
-                  <small>{label}</small><strong>{card?.name ?? 'Livre'}</strong>
+                  <small>{label}{showOvr && card?.rating !== undefined ? ' · ' + card.rating : ''}</small>
+                  <strong>{card?.name ?? 'Livre'}</strong>
                 </button>]
               })}
             </div>)}
@@ -107,7 +127,9 @@ function HistoricalCampaign({ competition, request }: { competition: Competition
                   setMoving(undefined)
                   setCandidate(candidate === card.id ? undefined : card.id)
                 }}>
-                <strong>{card.name}</strong><small>{positionLabels[card.position]}</small>
+                <strong>{card.name}</strong><small>{positionLabels[card.position]}
+                  {showOvr && card.rating !== undefined && <b className="draft-overall">OVR {card.rating}</b>}
+                </small>
               </button>)}
             </div>
             <button className="quiet" disabled={busy || !run.reroll} onClick={() => act('reroll', {})}>

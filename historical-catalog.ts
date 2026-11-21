@@ -101,7 +101,10 @@ export const competitions = {
 }
 
 export type Competition = keyof typeof competitions
-export type HistoricalCard = { id: string; name: string; team: string; year: string; position: Position; rating: number; reserve?: boolean }
+export type HistoricalCard = {
+  id: string; name: string; team: string; year: string; position: Position; rating: number
+  reserve?: boolean; squadId?: string; playerId?: string
+}
 
 export const squadReserves: Record<string, [string, Position, number][]> = {
   Flamengo: [['César', 'GOL', 75], ['Rodinei', 'DEF', 78], ['Diego Ribas', 'MEI', 83], ['Vitinho', 'ATA', 80]],

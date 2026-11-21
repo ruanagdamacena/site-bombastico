@@ -255,3 +255,6 @@ form label { flex: 1 1 140px; }
   .squad-choices { max-height: 250px; }
 }
 @media (prefers-reduced-motion: reduce) { .drawn-squad { animation: none; } }
+.history-ovr { display: flex; gap: 8px; align-items: center; width: fit-content; }
+.history-ovr input { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--accent); }
+.draft-overall { display: block; color: var(--accent); font-variant-numeric: tabular-nums; }
